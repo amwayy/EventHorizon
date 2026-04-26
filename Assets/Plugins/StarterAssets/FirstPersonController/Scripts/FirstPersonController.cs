@@ -69,7 +69,7 @@ namespace StarterAssets
 		private PlayerInput _playerInput;
 #endif
 		private CharacterController _controller;
-		private StarterAssetsInputs _input;
+		protected StarterAssetsInputs _input;
 		private GameObject _mainCamera;
 
 		private const float _threshold = 0.01f;
@@ -129,7 +129,7 @@ namespace StarterAssets
 			Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
 		}
 
-		private void CameraRotation()
+		protected virtual void CameraRotation()
 		{
 			// if there is an input
 			if (_input.look.sqrMagnitude >= _threshold)
@@ -192,6 +192,21 @@ namespace StarterAssets
 			{
 				// move
 				inputDirection = transform.right * _input.move.x + transform.forward * _input.move.y;
+
+				// 处理贴墙减速
+				if (Physics.Raycast(
+					    transform.position,
+					    inputDirection,
+					    out RaycastHit hit,
+					    1f,
+					    Physics.DefaultRaycastLayers,
+					    QueryTriggerInteraction.Ignore))
+				{
+					if (Vector3.Dot(hit.normal, inputDirection) < 0)
+					{
+						inputDirection = Vector3.ProjectOnPlane(inputDirection, hit.normal);
+					}
+				}
 			}
 
 			// move the player
