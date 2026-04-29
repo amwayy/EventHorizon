@@ -1,0 +1,107 @@
+﻿#pragma kernel InitSeeds
+#pragma kernel JumpFlood
+#pragma kernel GenerateMask
+
+Texture2D<float4> Source;
+Texture2D<float2> SeedsIn;
+RWTexture2D<float2> SeedsOut;
+RWTexture2D<float> Mask;
+RWTexture2D<float> OriginalMask;
+float2 SeedPos;
+float Tolerance;
+uint2 TexSize;
+int StepSize;
+
+[numthreads(8,8,1)]
+void InitSeeds(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= TexSize.x || id.y >= TexSize.y) return;
+
+    uint2 seedPixel = uint2(SeedPos);
+    float4 targetColor = Source[seedPixel];
+    float4 pixel = Source[id.xy];
+
+    float diff = length(pixel.rgb - targetColor.rgb);
+    bool isMatch = diff <= Tolerance;
+
+    OriginalMask[id.xy] = isMatch ? 1.0 : 0.0;
+
+    // Only the clicked pixel starts as a seed
+    bool isClickedPixel = (id.x == seedPixel.x && id.y == seedPixel.y);
+    SeedsOut[id.xy] = isClickedPixel ? float2(id.xy) : float2(-1, -1);
+}
+
+[numthreads(8,8,1)]
+void JumpFlood(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= TexSize.x || id.y >= TexSize.y) return;
+
+    // Only propagate to pixels that match the target color
+    bool canPropagate = OriginalMask[id.xy] > 0.5;
+    if (!canPropagate)
+    {
+        SeedsOut[id.xy] = float2(-1, -1);
+        return;
+    }
+
+    float2 closest = SeedsIn[id.xy];
+    float minDist = 999999;
+
+    if (closest.x >= 0)
+        minDist = length(closest - float2(id.xy));
+
+    for (int y = -1; y <= 1; y++)
+    {
+        for (int x = -1; x <= 1; x++)
+        {
+            int2 samplePos = id.xy + int2(x, y) * StepSize;
+            if (samplePos.x < 0 || samplePos.x >= TexSize.x || samplePos.y < 0 || samplePos.y >= TexSize.y)
+                continue;
+
+            float2 seed = SeedsIn[samplePos];
+            if (seed.x < 0) continue;
+
+            // Check if there's a continuous path of matching pixels
+            int2 dir = samplePos - int2(id.xy);
+            int steps = max(abs(dir.x), abs(dir.y));
+            bool pathClear = true;
+
+            if (steps > 1)
+            {
+                for (int i = 1; i < steps; i++)
+                {
+                    int2 checkPos = int2(id.xy) + (dir * i) / steps;
+                    if (OriginalMask[checkPos] < 0.5)
+                    {
+                        pathClear = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!pathClear) continue;
+
+            float dist = length(seed - float2(id.xy));
+            if (dist < minDist)
+            {
+                minDist = dist;
+                closest = seed;
+            }
+        }
+    }
+
+    SeedsOut[id.xy] = closest;
+}
+
+[numthreads(8,8,1)]
+void GenerateMask(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= TexSize.x || id.y >= TexSize.y) return;
+
+    float2 mySeed = SeedsIn[id.xy];
+
+    // If this pixel has a valid seed (>= 0), it's connected to the clicked region
+    bool isConnected = mySeed.x >= 0;
+
+    Mask[id.xy] = isConnected ? 1.0 : 0.0;
+}
