@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 0dcad93cfb940244dbe16da97e0c9340
+guid: 57f991b00a505894aa800fbb754c66e4
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -13,5 +13,5 @@ AssetOrigin:
   productId: 318895
   packageName: Gritline Toon Shader
   packageVersion: 1.0
-  assetPath: Assets/Shaders/UnlitToon.shadergraph
+  assetPath: Assets/Eugatnom/GritlineToonShader/Shaders/LitToon.shadergraph
   uploadId: 766945
