@@ -1,4 +1,5 @@
 ﻿using System;
+using DG.Tweening;
 using GameEvent;
 using GameEvent.Args;
 using Unity.Cinemachine;
@@ -7,6 +8,7 @@ using UnityEngine;
 public class MultiCameraManager : MonoBehaviour
 {
     [SerializeField] private CinemachineVirtualCamera[] cameras;
+    [SerializeField] private CinemachineBrain cinemachineBrain;
 
     public static MultiCameraManager Instance { get; private set; }
     
@@ -14,6 +16,7 @@ public class MultiCameraManager : MonoBehaviour
     private const int InactiveCameraPriority = 0;
 
     private int _activeIndex;
+    public bool IsInSwitch { get; private set; }
 
     private void Awake()
     {
@@ -39,6 +42,8 @@ public class MultiCameraManager : MonoBehaviour
 
     private void SwitchCamera(int index)
     {
+        if (_activeIndex == index) return;
+        
         _activeIndex = index;
         for (var i = 0; i < cameras.Length; i++)
         {
@@ -47,6 +52,9 @@ public class MultiCameraManager : MonoBehaviour
             cam.gameObject.SetActive(isActive);
             cam.Priority = isActive ? ActiveCameraPriority : InactiveCameraPriority;
         }
+
+        IsInSwitch = true;
+        DOVirtual.DelayedCall(cinemachineBrain.DefaultBlend.BlendTime, () => IsInSwitch = false);
     }
 
     public Transform GetActiveCameraTransform()

@@ -20,6 +20,7 @@ public class ShapeComparor : MonoBehaviour
         {
             ComputeReferenceMoments();
         }
+        DontDestroyOnLoad(gameObject);
     }
 
     private void OnDestroy()
@@ -67,8 +68,6 @@ public class ShapeComparor : MonoBehaviour
 
         // Use template matching instead of Hu moments for more accurate comparison
         var similarity = CompareTemplates(normalizedRegion);
-
-        Debug.Log($"Shape Similarity: {similarity:F3} (threshold: {similarityThreshold})");
 
         normalizedRegion.Release();
 

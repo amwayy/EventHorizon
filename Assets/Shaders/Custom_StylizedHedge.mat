@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_StylizedHedge
+  m_Shader: {fileID: 4800000, guid: 397206fa63394cca820366a702db0687, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: _LeafSize
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Density: 20
+    - _LeafSize: 1
+    - _NoiseScale: 10
+    - _NoiseStrength: 0
+    - _Randomness: 0
+    - _StepCount: 3.34
+    m_Colors:
+    - _BaseColor: {r: 0.19999996, g: 0.6, b: 0.19999996, a: 1}
+    - _ColorA: {r: 0.14999998, g: 0.39999998, b: 0.14999998, a: 1}
+    - _ColorB: {r: 0.29999998, g: 0.6, b: 0.19999996, a: 1}
+    - _ColorC: {r: 0.6, g: 0.85, b: 0.29999998, a: 1}
+    - _DarkColor: {r: 0.09999997, g: 0.39999998, b: 0.09999997, a: 1}
+    - _LightColor: {r: 0.5, g: 0.8, b: 0.29999998, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

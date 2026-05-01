@@ -1,5 +1,7 @@
-﻿using StarterAssets;
+﻿using System.Collections;
+using StarterAssets;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ScreenshotController : MonoBehaviour
 {
@@ -8,7 +10,6 @@ public class ScreenshotController : MonoBehaviour
     [SerializeField] private Color replaceColor = Color.red;
     [SerializeField] [Range(0f, 1f)] private float tolerance = 0.1f;
     [SerializeField] [Range(1, 10)] private int outlineWidth = 1;
-    [SerializeField] private StarterAssetsInputs inputs;
     [SerializeField] private GameObject screenshotBorder;
     [SerializeField] private ShapeComparor shapeComparor;
     
@@ -33,8 +34,14 @@ public class ScreenshotController : MonoBehaviour
     private Camera _cam;
     private int _viewportWidth = 1920;
     private int _viewportHeight = 1080;
+    private StarterAssetsInputs _inputs;
 
     private bool _inScreenshot;
+
+    private void Awake()
+    {
+        DontDestroyOnLoad(gameObject);
+    }
 
     private void Start()
     {
@@ -63,6 +70,16 @@ public class ScreenshotController : MonoBehaviour
         _originalMask.Create();
     }
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
     private void Update()
     {
         if (Input.GetMouseButtonDown(1))
@@ -89,7 +106,12 @@ public class ScreenshotController : MonoBehaviour
 
             if (Input.GetMouseButtonDown(0) && shapeComparor)
             {
-                shapeComparor.IsShapeSimilar(_maskTexture);
+                var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture);
+                if (isShapeMatched)
+                {
+                    ToggleScreenshotState();
+                    GameManager.Instance.MarkLevelComplete();
+                }
             }
         }
     }
@@ -150,8 +172,9 @@ public class ScreenshotController : MonoBehaviour
             ClearPreviousOutline();
         }
 
-        inputs.cursorLocked = !_inScreenshot;
-        inputs.SetCursorState(!_inScreenshot);
+        _inputs.cursorLocked = !_inScreenshot;
+        _inputs.SetCursorState(!_inScreenshot);
+        _inputs.cursorInputForLook = !_inScreenshot;
         Time.timeScale = _inScreenshot ? 0f : 1f;
 
         screenshotBorder.SetActive(_inScreenshot);
@@ -164,5 +187,11 @@ public class ScreenshotController : MonoBehaviour
         Graphics.SetRenderTarget(_originalMask);
         GL.Clear(true, true, Color.clear);
         Graphics.SetRenderTarget(null);
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        _cam = Camera.main;
+        _inputs = FindAnyObjectByType<StarterAssetsInputs>();
     }
 }
