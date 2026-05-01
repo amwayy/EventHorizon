@@ -1,3 +1,6 @@
+using System;
+using GameEvent;
+using GameEvent.Args;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -19,6 +22,16 @@ namespace StarterAssets
 		[Header("Mouse Cursor Settings")]
 		public bool cursorLocked = true;
 		public bool cursorInputForLook = true;
+
+		private void Start()
+		{
+			EventComponent.Instance.Subscribe(ScreenshotModeToggleEventArgs.EventId, OnScreenshotModeToggled);
+		}
+
+		private void OnDestroy()
+		{
+			EventComponent.Instance.Subscribe(ScreenshotModeToggleEventArgs.EventId, OnScreenshotModeToggled);
+		}
 
 #if ENABLE_INPUT_SYSTEM
 		public void OnMove(InputValue value)
@@ -74,6 +87,16 @@ namespace StarterAssets
 		public void SetCursorState(bool newState)
 		{
 			Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
+		}
+
+		private void OnScreenshotModeToggled(object sender, GameEventArgs e)
+		{
+			if (e is not ScreenshotModeToggleEventArgs args) return;
+			
+			var isInScreenshotMode = args.IsOn;
+			cursorLocked = !isInScreenshotMode;
+			SetCursorState(!isInScreenshotMode);
+			cursorInputForLook = !isInScreenshotMode;
 		}
 	}
 	

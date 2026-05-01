@@ -5,6 +5,8 @@ public class ShapeComparor : MonoBehaviour
     [SerializeField] private Texture2D referenceMask;
     [SerializeField] [Range(0f, 1f)] private float similarityThreshold = 0.85f;
 
+    private static ShapeComparor _instance;
+    
     private ComputeBuffer _momentsBuffer;
     private ComputeBuffer _referenceMomentsBuffer;
     private ComputeBuffer _groupMomentsBuffer;
@@ -20,7 +22,16 @@ public class ShapeComparor : MonoBehaviour
         {
             ComputeReferenceMoments();
         }
-        DontDestroyOnLoad(gameObject);
+        
+        if (_instance == null)
+        {
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void OnDestroy()

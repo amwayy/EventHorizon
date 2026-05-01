@@ -1,5 +1,4 @@
-﻿using System;
-using DG.Tweening;
+﻿using DG.Tweening;
 using GameEvent;
 using GameEvent.Args;
 using Unity.Cinemachine;
@@ -7,7 +6,7 @@ using UnityEngine;
 
 public class MultiCameraManager : MonoBehaviour
 {
-    [SerializeField] private CinemachineVirtualCamera[] cameras;
+    [SerializeField] private CinemachineCamera[] cameras;
     [SerializeField] private CinemachineBrain cinemachineBrain;
 
     public static MultiCameraManager Instance { get; private set; }
@@ -17,10 +16,16 @@ public class MultiCameraManager : MonoBehaviour
 
     private int _activeIndex;
     public bool IsInSwitch { get; private set; }
+    private Camera _mainCamera;
 
     private void Awake()
     {
         Instance = this;
+    }
+
+    private void Start()
+    {
+        _mainCamera = Camera.main;
     }
 
     private void OnEnable()
@@ -55,6 +60,13 @@ public class MultiCameraManager : MonoBehaviour
 
         IsInSwitch = true;
         DOVirtual.DelayedCall(cinemachineBrain.DefaultBlend.BlendTime, () => IsInSwitch = false);
+        
+        _mainCamera.cullingMask = -1;
+        if (!IsInThirdPersonCamera())
+        {
+            var layer = LayerMask.NameToLayer("Player");
+            _mainCamera.cullingMask &= ~(1 << layer);
+        }
     }
 
     public Transform GetActiveCameraTransform()

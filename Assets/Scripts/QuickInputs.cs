@@ -3,9 +3,19 @@ using UnityEngine.SceneManagement;
 
 public class QuickInputs : MonoBehaviour
 {
+    private static QuickInputs _instance;
+    
     private void Awake()
     {
-        DontDestroyOnLoad(gameObject);
+        if (_instance == null)
+        {
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
     
     private void Update()

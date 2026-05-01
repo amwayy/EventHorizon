@@ -1,5 +1,6 @@
 ﻿using System.Collections;
-using StarterAssets;
+using GameEvent;
+using GameEvent.Args;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,7 +11,6 @@ public class ScreenshotController : MonoBehaviour
     [SerializeField] private Color replaceColor = Color.red;
     [SerializeField] [Range(0f, 1f)] private float tolerance = 0.1f;
     [SerializeField] [Range(1, 10)] private int outlineWidth = 1;
-    [SerializeField] private GameObject screenshotBorder;
     [SerializeField] private ShapeComparor shapeComparor;
     
     private static readonly int ReplaceColor = Shader.PropertyToID("_ReplaceColor");
@@ -27,6 +27,8 @@ public class ScreenshotController : MonoBehaviour
     private static readonly int SeedsIn = Shader.PropertyToID("SeedsIn");
     private static readonly int Mask = Shader.PropertyToID("Mask");
 
+    private static ScreenshotController _instance;
+    
     private RenderTexture _maskTexture;
     private RenderTexture _screenCapture;
     private readonly RenderTexture[] _seedBuffers = new RenderTexture[2];
@@ -34,13 +36,19 @@ public class ScreenshotController : MonoBehaviour
     private Camera _cam;
     private int _viewportWidth = 1920;
     private int _viewportHeight = 1080;
-    private StarterAssetsInputs _inputs;
-
     private bool _inScreenshot;
 
     private void Awake()
     {
-        DontDestroyOnLoad(gameObject);
+        if (_instance == null)
+        {
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void Start()
@@ -172,12 +180,9 @@ public class ScreenshotController : MonoBehaviour
             ClearPreviousOutline();
         }
 
-        _inputs.cursorLocked = !_inScreenshot;
-        _inputs.SetCursorState(!_inScreenshot);
-        _inputs.cursorInputForLook = !_inScreenshot;
         Time.timeScale = _inScreenshot ? 0f : 1f;
-
-        screenshotBorder.SetActive(_inScreenshot);
+        
+        EventComponent.Instance.Fire(this, ScreenshotModeToggleEventArgs.Create(_inScreenshot));
     }
 
     private void ClearPreviousOutline()
@@ -192,6 +197,5 @@ public class ScreenshotController : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         _cam = Camera.main;
-        _inputs = FindAnyObjectByType<StarterAssetsInputs>();
     }
 }
