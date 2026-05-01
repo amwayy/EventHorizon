@@ -118,7 +118,7 @@ public class ScreenshotController : MonoBehaviour
                 if (isShapeMatched)
                 {
                     ToggleScreenshotState();
-                    GameManager.Instance.MarkLevelComplete();
+                    EventComponent.Instance.Fire(this, GotCollectiveEventArgs.Create());
                 }
             }
         }
