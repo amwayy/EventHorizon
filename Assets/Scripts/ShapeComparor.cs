@@ -4,25 +4,32 @@ public class ShapeComparor : MonoBehaviour
 {
     [SerializeField] private Texture2D referenceMask;
     [SerializeField] [Range(0f, 1f)] private float similarityThreshold = 0.85f;
+    [SerializeField] private ComputeShader shapeCompareShader;
 
     private static ShapeComparor _instance;
-    
-    private ComputeBuffer _momentsBuffer;
-    private ComputeBuffer _referenceMomentsBuffer;
-    private ComputeBuffer _groupMomentsBuffer;
-    private ComputeBuffer _referenceGroupMomentsBuffer;
-    private Texture2D _normalizedReferenceTex;
+    private static readonly int RegionTex = Shader.PropertyToID("RegionTex");
+    private static readonly int ReferenceTex = Shader.PropertyToID("ReferenceTex");
+    private static readonly int Result = Shader.PropertyToID("Result");
+    private static readonly int Width = Shader.PropertyToID("Width");
+    private static readonly int Height = Shader.PropertyToID("Height");
+    private static readonly int SourceTex = Shader.PropertyToID("SourceTex");
+    private static readonly int BoundingBox = Shader.PropertyToID("BoundingBox");
+    private static readonly int SourceWidth = Shader.PropertyToID("SourceWidth");
+    private static readonly int SourceHeight = Shader.PropertyToID("SourceHeight");
+    private static readonly int CroppedTex = Shader.PropertyToID("CroppedTex");
+    private static readonly int MinX = Shader.PropertyToID("MinX");
+    private static readonly int MinY = Shader.PropertyToID("MinY");
+    private static readonly int RotatedTex = Shader.PropertyToID("RotatedTex");
+    private static readonly int RotationAngle = Shader.PropertyToID("RotationAngle");
+    private static readonly int CenterX = Shader.PropertyToID("CenterX");
+    private static readonly int CenterY = Shader.PropertyToID("CenterY");
 
-    private void Start()
+    private RenderTexture _normalizedReferenceRT;
+    private ComputeBuffer _resultBuffer;
+    private Material _blitMaterial;
+
+    private void Awake()
     {
-        _momentsBuffer = new ComputeBuffer(10, sizeof(float));
-        _referenceMomentsBuffer = new ComputeBuffer(10, sizeof(float));
-
-        if (referenceMask != null)
-        {
-            ComputeReferenceMoments();
-        }
-        
         if (_instance == null)
         {
             _instance = this;
@@ -34,14 +41,23 @@ public class ShapeComparor : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        _resultBuffer = new ComputeBuffer(5, sizeof(uint));
+
+        if (referenceMask != null)
+        {
+            ComputeReferenceMoments();
+        }
+    }
+
     private void OnDestroy()
     {
-        _momentsBuffer?.Release();
-        _referenceMomentsBuffer?.Release();
-        _groupMomentsBuffer?.Release();
-        _referenceGroupMomentsBuffer?.Release();
-        if (_normalizedReferenceTex != null)
-            Destroy(_normalizedReferenceTex);
+        _resultBuffer?.Release();
+        if (_normalizedReferenceRT != null)
+            _normalizedReferenceRT.Release();
+        if (_blitMaterial != null)
+            Destroy(_blitMaterial);
     }
 
     private void ComputeReferenceMoments()
@@ -52,142 +68,132 @@ public class ShapeComparor : MonoBehaviour
 
         Graphics.Blit(referenceMask, refRT);
 
-        // Normalize reference mask the same way as game regions
-        var normalizedRef = NormalizeRegion(refRT, 256, 256);
-        // SaveMaskVisualization(normalizedRef, "normalized_reference.png");
-
-        // Store normalized reference as Texture2D for template matching
-        RenderTexture.active = normalizedRef;
-        _normalizedReferenceTex = new Texture2D(256, 256, TextureFormat.RFloat, false);
-        _normalizedReferenceTex.ReadPixels(new Rect(0, 0, 256, 256), 0, 0);
-        _normalizedReferenceTex.Apply();
-        RenderTexture.active = null;
-
-        // Debug.Log("Reference texture normalized and stored for template matching");
+        _normalizedReferenceRT = NormalizeRegion(refRT, 256, 256);
 
         refRT.Release();
-        normalizedRef.Release();
     }
 
-    private float CompareShape(RenderTexture regionMask)
+    private float CompareShape(RenderTexture regionMask, float rotateAngle = 0f)
     {
-        // Normalize the region to standard size before computing moments
         var normalizedRegion = NormalizeRegion(regionMask, 256, 256);
 
-        // Save for debugging
-        // SaveMaskVisualization(normalizedRegion, "normalized_region.png");
+        RenderTexture rotatedRegion = normalizedRegion;
+        if (Mathf.Abs(rotateAngle) > 0.01f)
+        {
+            rotatedRegion = RotateTexture(normalizedRegion, rotateAngle);
+            normalizedRegion.Release();
+        }
 
-        // Use template matching instead of Hu moments for more accurate comparison
-        var similarity = CompareTemplates(normalizedRegion);
-
-        normalizedRegion.Release();
+        var similarity = CompareTemplates(rotatedRegion);
+        rotatedRegion.Release();
 
         return similarity;
+    }
+
+    private RenderTexture RotateTexture(RenderTexture source, float angle)
+    {
+        var rotated = new RenderTexture(source.width, source.height, 0, RenderTextureFormat.RFloat);
+        rotated.enableRandomWrite = true;
+        rotated.Create();
+
+        var rotateKernel = shapeCompareShader.FindKernel("RotateTexture");
+
+        shapeCompareShader.SetTexture(rotateKernel, SourceTex, source);
+        shapeCompareShader.SetTexture(rotateKernel, RotatedTex, rotated);
+        shapeCompareShader.SetInt(Width, source.width);
+        shapeCompareShader.SetInt(Height, source.height);
+        shapeCompareShader.SetFloat(RotationAngle, angle);
+        shapeCompareShader.SetFloat(CenterX, source.width * 0.5f);
+        shapeCompareShader.SetFloat(CenterY, source.height * 0.5f);
+
+        shapeCompareShader.Dispatch(rotateKernel, Mathf.CeilToInt(source.width / 8f), Mathf.CeilToInt(source.height / 8f), 1);
+
+        return rotated;
     }
 
     private float CompareTemplates(RenderTexture region)
     {
-        if (!referenceMask)
+        if (!_normalizedReferenceRT)
+            return 0f;
+
+        if (!shapeCompareShader)
         {
-            // Debug.LogError("Reference mask is null");
+            // Debug.LogError("ShapeCompareShader not assigned");
             return 0f;
         }
 
-        // Read both textures
-        RenderTexture.active = region;
-        var regionTex = new Texture2D(region.width, region.height, TextureFormat.RFloat, false);
-        regionTex.ReadPixels(new Rect(0, 0, region.width, region.height), 0, 0);
-        regionTex.Apply();
-        RenderTexture.active = null;
+        var kernel = shapeCompareShader.FindKernel("ComputeNCC");
 
-        // Get reference texture (already normalized in Start)
-        var refTex = _normalizedReferenceTex;
+        var clearData = new uint[5];
+        _resultBuffer.SetData(clearData);
 
-        if (!refTex || regionTex.width != refTex.width || regionTex.height != refTex.height)
-        {
-            // Debug.LogError("Template size mismatch");
-            Destroy(regionTex);
-            return 0f;
-        }
+        shapeCompareShader.SetTexture(kernel, RegionTex, region);
+        shapeCompareShader.SetTexture(kernel, ReferenceTex, _normalizedReferenceRT);
+        shapeCompareShader.SetBuffer(kernel, Result, _resultBuffer);
+        shapeCompareShader.SetInt(Width, region.width);
+        shapeCompareShader.SetInt(Height, region.height);
 
-        var width = regionTex.width;
-        var height = regionTex.height;
+        shapeCompareShader.Dispatch(kernel, Mathf.CeilToInt(region.width / 8f), Mathf.CeilToInt(region.height / 8f), 1);
 
-        // Compute normalized cross-correlation
-        double sumRegion = 0, sumRef = 0;
-        double sumRegionSq = 0, sumRefSq = 0;
-        double sumProduct = 0;
-        var count = 0;
+        var results = new uint[5];
+        _resultBuffer.GetData(results);
 
-        for (var y = 0; y < height; y++)
-        {
-            for (var x = 0; x < width; x++)
-            {
-                var regionVal = regionTex.GetPixel(x, y).r;
-                var refVal = refTex.GetPixel(x, y).r;
+        var sumRegion = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[0]), 0);
+        var sumRef = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[1]), 0);
+        var sumRegionSq = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[2]), 0);
+        var sumRefSq = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[3]), 0);
+        var sumProduct = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[4]), 0);
+        var count = region.width * region.height;
 
-                sumRegion += regionVal;
-                sumRef += refVal;
-                sumRegionSq += regionVal * regionVal;
-                sumRefSq += refVal * refVal;
-                sumProduct += regionVal * refVal;
-                count++;
-            }
-        }
-
-        // Normalized cross-correlation coefficient
         var meanRegion = sumRegion / count;
         var meanRef = sumRef / count;
 
         var numerator = sumProduct - count * meanRegion * meanRef;
-        var denominator = System.Math.Sqrt((sumRegionSq - count * meanRegion * meanRegion) *
-                                           (sumRefSq - count * meanRef * meanRef));
+        var denominator = Mathf.Sqrt((sumRegionSq - count * meanRegion * meanRegion) *
+                                     (sumRefSq - count * meanRef * meanRef));
 
-        var ncc = (denominator > 1e-10) ? (float)(numerator / denominator) : 0f;
-
-        // NCC ranges from -1 to 1, convert to 0-1 similarity
+        var ncc = (denominator > 1e-10f) ? numerator / denominator : 0f;
         var similarity = (ncc + 1f) / 2f;
 
-        // Debug.Log($"NCC: {ncc:F4}, Similarity: {similarity:F4}");
-
-        Destroy(regionTex);
+        // Debug.Log($"NCC: {ncc:F4}, Similarity: {similarity:F4}, sumRegion: {sumRegion:F2}, sumRef: {sumRef:F2}, count: {count}");
 
         return similarity;
     }
 
-    private static RenderTexture NormalizeRegion(RenderTexture source, int targetWidth, int targetHeight)
+    private RenderTexture NormalizeRegion(RenderTexture source, int targetWidth, int targetHeight)
     {
-        // Read texture to find bounding box
-        RenderTexture.active = source;
-        var tex = new Texture2D(source.width, source.height, TextureFormat.RFloat, false);
-        tex.ReadPixels(new Rect(0, 0, source.width, source.height), 0, 0);
-        tex.Apply();
-        RenderTexture.active = null;
-
-        int minX = source.width, maxX = 0;
-        int minY = source.height, maxY = 0;
-        var foundPixel = false;
-
-        // Find bounding box and count pixels
-        for (var y = 0; y < source.height; y++)
+        if (!shapeCompareShader)
         {
-            for (var x = 0; x < source.width; x++)
-            {
-                if (tex.GetPixel(x, y).r > 0.5f)
-                {
-                    foundPixel = true;
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
-                }
-            }
+            // Debug.LogError("ShapeCompareShader not assigned");
+            var empty = new RenderTexture(targetWidth, targetHeight, 0, RenderTextureFormat.RFloat);
+            empty.Create();
+            return empty;
         }
 
-        if (!foundPixel)
+        var bboxBuffer = new ComputeBuffer(4, sizeof(int));
+        var initBbox = new int[] { source.width, source.height, 0, 0 };
+        bboxBuffer.SetData(initBbox);
+
+        var bboxKernel = shapeCompareShader.FindKernel("ComputeBoundingBox");
+
+        shapeCompareShader.SetTexture(bboxKernel, SourceTex, source);
+        shapeCompareShader.SetBuffer(bboxKernel, BoundingBox, bboxBuffer);
+        shapeCompareShader.SetInt(SourceWidth, source.width);
+        shapeCompareShader.SetInt(SourceHeight, source.height);
+
+        shapeCompareShader.Dispatch(bboxKernel, Mathf.CeilToInt(source.width / 8f), Mathf.CeilToInt(source.height / 8f), 1);
+
+        var bbox = new int[4];
+        bboxBuffer.GetData(bbox);
+        bboxBuffer.Release();
+
+        var minX = bbox[0];
+        var minY = bbox[1];
+        var maxX = bbox[2];
+        var maxY = bbox[3];
+
+        if (minX > maxX || minY > maxY)
         {
-            // Debug.LogWarning("No pixels found in region mask");
-            Destroy(tex);
             var empty = new RenderTexture(targetWidth, targetHeight, 0, RenderTextureFormat.RFloat);
             empty.Create();
             return empty;
@@ -196,101 +202,58 @@ public class ShapeComparor : MonoBehaviour
         var bboxWidth = maxX - minX + 1;
         var bboxHeight = maxY - minY + 1;
 
-        // Debug.Log($"Bounding box: ({minX}, {minY}) to ({maxX}, {maxY}), size: {bboxWidth}x{bboxHeight}");
-        // Debug.Log($"Total pixels: {totalPixels}, bbox area: {bboxArea}, fill ratio: {(float)totalPixels / bboxArea:F2}");
+        var cropped = new RenderTexture(bboxWidth, bboxHeight, 0, RenderTextureFormat.RFloat);
+        cropped.enableRandomWrite = true;
+        cropped.Create();
 
-        // Remove noise: if a connected component is too small, ignore it
-        // Simple approach: only keep pixels in the bounding box
-        var cleaned = new Texture2D(bboxWidth, bboxHeight, TextureFormat.RFloat, false);
+        var cropKernel = shapeCompareShader.FindKernel("CropRegion");
+        shapeCompareShader.SetTexture(cropKernel, SourceTex, source);
+        shapeCompareShader.SetTexture(cropKernel, CroppedTex, cropped);
+        shapeCompareShader.SetInt(MinX, minX);
+        shapeCompareShader.SetInt(MinY, minY);
 
-        for (var y = 0; y < bboxHeight; y++)
-        {
-            for (var x = 0; x < bboxWidth; x++)
-            {
-                var pixel = tex.GetPixel(minX + x, minY + y);
-                cleaned.SetPixel(x, y, pixel);
-            }
-        }
-        cleaned.Apply();
+        shapeCompareShader.Dispatch(cropKernel, Mathf.CeilToInt(bboxWidth / 8f), Mathf.CeilToInt(bboxHeight / 8f), 1);
 
-        // Calculate scaling to fit in target size while maintaining aspect ratio
         var scale = Mathf.Min((float)targetWidth / bboxWidth, (float)targetHeight / bboxHeight);
         var scaledWidth = Mathf.RoundToInt(bboxWidth * scale);
         var scaledHeight = Mathf.RoundToInt(bboxHeight * scale);
 
-        // Debug.Log($"Scaled size: {scaledWidth}x{scaledHeight}");
+        var scaledRT = new RenderTexture(scaledWidth, scaledHeight, 0, RenderTextureFormat.RFloat);
+        scaledRT.Create();
+        Graphics.Blit(cropped, scaledRT);
 
-        // Create normalized render texture (centered in target size)
         var normalized = new RenderTexture(targetWidth, targetHeight, 0, RenderTextureFormat.RFloat);
         normalized.enableRandomWrite = true;
         normalized.Create();
 
-        // Clear to black
         RenderTexture.active = normalized;
         GL.Clear(true, true, Color.black);
         RenderTexture.active = null;
 
-        // Resize cleaned texture to scaled size
-        var scaledRT = new RenderTexture(scaledWidth, scaledHeight, 0, RenderTextureFormat.RFloat);
-        scaledRT.Create();
-        Graphics.Blit(cleaned, scaledRT);
+        if (!_blitMaterial)
+            _blitMaterial = new Material(Shader.Find("Hidden/BlitCopy"));
 
-        // Copy scaled texture to center of normalized texture
         var offsetX = (targetWidth - scaledWidth) / 2;
         var offsetY = (targetHeight - scaledHeight) / 2;
 
-        // Read scaled texture
-        RenderTexture.active = scaledRT;
-        var scaledTex = new Texture2D(scaledWidth, scaledHeight, TextureFormat.RFloat, false);
-        scaledTex.ReadPixels(new Rect(0, 0, scaledWidth, scaledHeight), 0, 0);
-        scaledTex.Apply();
-        RenderTexture.active = null;
+        Graphics.SetRenderTarget(normalized);
+        GL.PushMatrix();
+        GL.LoadPixelMatrix(0, targetWidth, targetHeight, 0);
 
-        // Write to normalized texture at offset position
-        RenderTexture.active = normalized;
-        var normalizedTex = new Texture2D(targetWidth, targetHeight, TextureFormat.RFloat, false);
+        Graphics.DrawTexture(new Rect(offsetX, offsetY, scaledWidth, scaledHeight), scaledRT, _blitMaterial);
 
-        // Fill with black
-        var blackPixels = new Color[targetWidth * targetHeight];
-        for (var i = 0; i < blackPixels.Length; i++)
-            blackPixels[i] = Color.black;
-        normalizedTex.SetPixels(blackPixels);
+        GL.PopMatrix();
+        Graphics.SetRenderTarget(null);
 
-        // Copy scaled pixels to center
-        normalizedTex.SetPixels(offsetX, offsetY, scaledWidth, scaledHeight, scaledTex.GetPixels());
-        normalizedTex.Apply();
-
-        Graphics.Blit(normalizedTex, normalized);
-        RenderTexture.active = null;
-
-        Destroy(tex);
-        Destroy(cleaned);
-        Destroy(scaledTex);
-        Destroy(normalizedTex);
+        cropped.Release();
         scaledRT.Release();
 
         return normalized;
     }
 
-    public bool IsShapeSimilar(RenderTexture regionMask)
+    public bool IsShapeSimilar(RenderTexture regionMask, out float similarity, float rotateAngle = 0f)
     {
-        var similarity = CompareShape(regionMask);
+        similarity = CompareShape(regionMask, rotateAngle);
         return similarity >= similarityThreshold;
-    }
-
-    private void SaveMaskVisualization(RenderTexture mask, string filename)
-    {
-        RenderTexture.active = mask;
-        var tex = new Texture2D(mask.width, mask.height, TextureFormat.RGB24, false);
-        tex.ReadPixels(new Rect(0, 0, mask.width, mask.height), 0, 0);
-        tex.Apply();
-        RenderTexture.active = null;
-
-        var bytes = tex.EncodeToPNG();
-        var path = System.IO.Path.Combine(Application.dataPath, "..", filename);
-        System.IO.File.WriteAllBytes(path, bytes);
-        // Debug.Log($"Saved mask visualization to: {path}");
-
-        Destroy(tex);
     }
 }

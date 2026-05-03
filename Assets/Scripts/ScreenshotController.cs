@@ -6,14 +6,14 @@ using UnityEngine.SceneManagement;
 
 public class ScreenshotController : MonoBehaviour
 {
-    [SerializeField] private Material colorReplaceMaterial;
+    [SerializeField] private Material hoverOutlineMaterial;
     [SerializeField] private ComputeShader floodFillShader;
-    [SerializeField] private Color replaceColor = Color.red;
+    [SerializeField] private Color outlineColor = Color.red;
     [SerializeField] [Range(0f, 1f)] private float tolerance = 0.1f;
     [SerializeField] [Range(1, 10)] private int outlineWidth = 1;
     [SerializeField] private ShapeComparor shapeComparor;
     
-    private static readonly int ReplaceColor = Shader.PropertyToID("_ReplaceColor");
+    private static readonly int OutlineColor = Shader.PropertyToID("_ReplaceColor");
     private static readonly int OutlineWidth = Shader.PropertyToID("_OutlineWidth");
     private static readonly int FloodFillMaskTexelSize = Shader.PropertyToID("_FloodFillMask_TexelSize");
     private static readonly int FloodFillMask = Shader.PropertyToID("_FloodFillMask");
@@ -107,18 +107,31 @@ public class ScreenshotController : MonoBehaviour
 
             FloodFillGPU(mousePos);
 
-            colorReplaceMaterial.SetTexture(FloodFillMask, _maskTexture);
-            colorReplaceMaterial.SetVector(FloodFillMaskTexelSize, new Vector4(1.0f / _viewportWidth, 1.0f / _viewportHeight, _viewportWidth, _viewportHeight));
-            colorReplaceMaterial.SetInt(OutlineWidth, outlineWidth);
-            colorReplaceMaterial.SetColor(ReplaceColor, replaceColor);
+            hoverOutlineMaterial.SetTexture(FloodFillMask, _maskTexture);
+            hoverOutlineMaterial.SetVector(FloodFillMaskTexelSize, new Vector4(1.0f / _viewportWidth, 1.0f / _viewportHeight, _viewportWidth, _viewportHeight));
+            hoverOutlineMaterial.SetInt(OutlineWidth, outlineWidth);
+            hoverOutlineMaterial.SetColor(OutlineColor, outlineColor);
+
+            // // real time shape test
+            // var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, out var similarity);
+            // outlineColor = isShapeMatched ? Color.green : Color.red;
+            // if (Input.GetMouseButtonDown(0))
+            // {
+            //     Debug.Log("similarity: " + similarity);
+            // }
 
             if (Input.GetMouseButtonDown(0) && shapeComparor)
             {
-                var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture);
-                if (isShapeMatched)
+                for (var angle = 0f; angle < 360f; angle += 90f)
                 {
-                    ToggleScreenshotState();
-                    EventComponent.Instance.Fire(this, GotCollectiveEventArgs.Create());
+                    var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, out _, angle);
+                    if (isShapeMatched)
+                    {
+                        Debug.Log($"match angle: {angle}");
+                        ToggleScreenshotState();
+                        EventComponent.Instance.Fire(this, GotCollectiveEventArgs.Create());
+                        break;
+                    }
                 }
             }
         }
@@ -142,7 +155,7 @@ public class ScreenshotController : MonoBehaviour
         var steps = Mathf.CeilToInt(Mathf.Log(maxDim, 2));
         var read = 0;
 
-        for (int i = 0; i < steps; i++)
+        for (var i = 0; i < steps; i++)
         {
             var write = 1 - read;
             var stepSize = 1 << (steps - i - 1);

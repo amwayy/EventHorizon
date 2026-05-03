@@ -1,0 +1,269 @@
+#pragma kernel ComputeNCC
+#pragma kernel ComputeBoundingBox
+#pragma kernel CropRegion
+#pragma kernel RotateTexture
+
+Texture2D<float> RegionTex;
+Texture2D<float> ReferenceTex;
+Texture2D<float> SourceTex;
+RWTexture2D<float> CroppedTex;
+RWTexture2D<float> RotatedTex;
+
+RWStructuredBuffer<uint> Result;
+RWStructuredBuffer<int> BoundingBox;
+
+int Width;
+int Height;
+int SourceWidth;
+int SourceHeight;
+int MinX;
+int MinY;
+float RotationAngle;
+float CenterX;
+float CenterY;
+
+groupshared float sharedSumRegion[64];
+groupshared float sharedSumRef[64];
+groupshared float sharedSumRegionSq[64];
+groupshared float sharedSumRefSq[64];
+groupshared float sharedSumProduct[64];
+
+groupshared int sharedMinX[64];
+groupshared int sharedMinY[64];
+groupshared int sharedMaxX[64];
+groupshared int sharedMaxY[64];
+
+void AtomicAddFloat(uint index, float value)
+{
+    uint i_val = asuint(value);
+    uint tmp0 = 0;
+    uint tmp1;
+
+    [allow_uav_condition]
+    while (true)
+    {
+        InterlockedCompareExchange(Result[index], tmp0, i_val, tmp1);
+        if (tmp1 == tmp0)
+            break;
+        tmp0 = tmp1;
+        i_val = asuint(value + asfloat(tmp1));
+    }
+}
+
+[numthreads(8,8,1)]
+void ComputeNCC(uint3 id : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupThreadID)
+{
+    uint threadIndex = groupThreadID.y * 8 + groupThreadID.x;
+
+    sharedSumRegion[threadIndex] = 0;
+    sharedSumRef[threadIndex] = 0;
+    sharedSumRegionSq[threadIndex] = 0;
+    sharedSumRefSq[threadIndex] = 0;
+    sharedSumProduct[threadIndex] = 0;
+
+    if (id.x < (uint)Width && id.y < (uint)Height)
+    {
+        float regionVal = RegionTex[id.xy];
+        float refVal = ReferenceTex[id.xy];
+
+        sharedSumRegion[threadIndex] = regionVal;
+        sharedSumRef[threadIndex] = refVal;
+        sharedSumRegionSq[threadIndex] = regionVal * regionVal;
+        sharedSumRefSq[threadIndex] = refVal * refVal;
+        sharedSumProduct[threadIndex] = regionVal * refVal;
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 32)
+    {
+        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 32];
+        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 32];
+        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 32];
+        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 32];
+        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 32];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 16)
+    {
+        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 16];
+        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 16];
+        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 16];
+        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 16];
+        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 16];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 8)
+    {
+        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 8];
+        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 8];
+        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 8];
+        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 8];
+        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 8];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 4)
+    {
+        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 4];
+        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 4];
+        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 4];
+        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 4];
+        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 4];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 2)
+    {
+        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 2];
+        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 2];
+        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 2];
+        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 2];
+        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 2];
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex == 0)
+    {
+        sharedSumRegion[0] += sharedSumRegion[1];
+        sharedSumRef[0] += sharedSumRef[1];
+        sharedSumRegionSq[0] += sharedSumRegionSq[1];
+        sharedSumRefSq[0] += sharedSumRefSq[1];
+        sharedSumProduct[0] += sharedSumProduct[1];
+
+        AtomicAddFloat(0, sharedSumRegion[0]);
+        AtomicAddFloat(1, sharedSumRef[0]);
+        AtomicAddFloat(2, sharedSumRegionSq[0]);
+        AtomicAddFloat(3, sharedSumRefSq[0]);
+        AtomicAddFloat(4, sharedSumProduct[0]);
+    }
+}
+
+[numthreads(8,8,1)]
+void ComputeBoundingBox(uint3 id : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupThreadID)
+{
+    uint threadIndex = groupThreadID.y * 8 + groupThreadID.x;
+
+    sharedMinX[threadIndex] = SourceWidth;
+    sharedMinY[threadIndex] = SourceHeight;
+    sharedMaxX[threadIndex] = 0;
+    sharedMaxY[threadIndex] = 0;
+
+    if (id.x < (uint)SourceWidth && id.y < (uint)SourceHeight)
+    {
+        float val = SourceTex[id.xy];
+        if (val > 0.5)
+        {
+            sharedMinX[threadIndex] = id.x;
+            sharedMinY[threadIndex] = id.y;
+            sharedMaxX[threadIndex] = id.x;
+            sharedMaxY[threadIndex] = id.y;
+        }
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 32)
+    {
+        sharedMinX[threadIndex] = min(sharedMinX[threadIndex], sharedMinX[threadIndex + 32]);
+        sharedMinY[threadIndex] = min(sharedMinY[threadIndex], sharedMinY[threadIndex + 32]);
+        sharedMaxX[threadIndex] = max(sharedMaxX[threadIndex], sharedMaxX[threadIndex + 32]);
+        sharedMaxY[threadIndex] = max(sharedMaxY[threadIndex], sharedMaxY[threadIndex + 32]);
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 16)
+    {
+        sharedMinX[threadIndex] = min(sharedMinX[threadIndex], sharedMinX[threadIndex + 16]);
+        sharedMinY[threadIndex] = min(sharedMinY[threadIndex], sharedMinY[threadIndex + 16]);
+        sharedMaxX[threadIndex] = max(sharedMaxX[threadIndex], sharedMaxX[threadIndex + 16]);
+        sharedMaxY[threadIndex] = max(sharedMaxY[threadIndex], sharedMaxY[threadIndex + 16]);
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 8)
+    {
+        sharedMinX[threadIndex] = min(sharedMinX[threadIndex], sharedMinX[threadIndex + 8]);
+        sharedMinY[threadIndex] = min(sharedMinY[threadIndex], sharedMinY[threadIndex + 8]);
+        sharedMaxX[threadIndex] = max(sharedMaxX[threadIndex], sharedMaxX[threadIndex + 8]);
+        sharedMaxY[threadIndex] = max(sharedMaxY[threadIndex], sharedMaxY[threadIndex + 8]);
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 4)
+    {
+        sharedMinX[threadIndex] = min(sharedMinX[threadIndex], sharedMinX[threadIndex + 4]);
+        sharedMinY[threadIndex] = min(sharedMinY[threadIndex], sharedMinY[threadIndex + 4]);
+        sharedMaxX[threadIndex] = max(sharedMaxX[threadIndex], sharedMaxX[threadIndex + 4]);
+        sharedMaxY[threadIndex] = max(sharedMaxY[threadIndex], sharedMaxY[threadIndex + 4]);
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex < 2)
+    {
+        sharedMinX[threadIndex] = min(sharedMinX[threadIndex], sharedMinX[threadIndex + 2]);
+        sharedMinY[threadIndex] = min(sharedMinY[threadIndex], sharedMinY[threadIndex + 2]);
+        sharedMaxX[threadIndex] = max(sharedMaxX[threadIndex], sharedMaxX[threadIndex + 2]);
+        sharedMaxY[threadIndex] = max(sharedMaxY[threadIndex], sharedMaxY[threadIndex + 2]);
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    if (threadIndex == 0)
+    {
+        int finalMinX = min(sharedMinX[0], sharedMinX[1]);
+        int finalMinY = min(sharedMinY[0], sharedMinY[1]);
+        int finalMaxX = max(sharedMaxX[0], sharedMaxX[1]);
+        int finalMaxY = max(sharedMaxY[0], sharedMaxY[1]);
+
+        InterlockedMin(BoundingBox[0], finalMinX);
+        InterlockedMin(BoundingBox[1], finalMinY);
+        InterlockedMax(BoundingBox[2], finalMaxX);
+        InterlockedMax(BoundingBox[3], finalMaxY);
+    }
+}
+
+[numthreads(8,8,1)]
+void CropRegion(uint3 id : SV_DispatchThreadID)
+{
+    uint2 sourcePos = uint2(id.x + MinX, id.y + MinY);
+    CroppedTex[id.xy] = SourceTex[sourcePos];
+}
+
+[numthreads(8,8,1)]
+void RotateTexture(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)Width || id.y >= (uint)Height)
+        return;
+
+    float angleRad = radians(RotationAngle);
+    float cosA = cos(angleRad);
+    float sinA = sin(angleRad);
+
+    float x = id.x - CenterX;
+    float y = id.y - CenterY;
+
+    float srcX = x * cosA - y * sinA + CenterX;
+    float srcY = x * sinA + y * cosA + CenterY;
+
+    if (srcX >= 0 && srcX < Width && srcY >= 0 && srcY < Height)
+    {
+        int2 srcPos = int2(srcX, srcY);
+        RotatedTex[id.xy] = SourceTex[srcPos];
+    }
+    else
+    {
+        RotatedTex[id.xy] = 0;
+    }
+}
