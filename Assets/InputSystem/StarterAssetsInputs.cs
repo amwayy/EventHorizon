@@ -23,6 +23,8 @@ namespace StarterAssets
 		public bool cursorLocked = true;
 		public bool cursorInputForLook = true;
 
+		private bool _ignoreNextLookInput;
+
 		private void Start()
 		{
 			EventComponent.Instance.Subscribe(ScreenshotModeToggleEventArgs.EventId, OnScreenshotModeToggled);
@@ -30,7 +32,7 @@ namespace StarterAssets
 
 		private void OnDestroy()
 		{
-			EventComponent.Instance.Subscribe(ScreenshotModeToggleEventArgs.EventId, OnScreenshotModeToggled);
+			EventComponent.Instance.Unsubscribe(ScreenshotModeToggleEventArgs.EventId, OnScreenshotModeToggled);
 		}
 
 #if ENABLE_INPUT_SYSTEM
@@ -66,6 +68,14 @@ namespace StarterAssets
 
 		public void LookInput(Vector2 newLookDirection)
 		{
+			// Ignore accumulated input after exiting screenshot mode
+			if (_ignoreNextLookInput)
+			{
+				_ignoreNextLookInput = false;
+				look = Vector2.zero;
+				return;
+			}
+
 			look = newLookDirection;
 		}
 
@@ -92,12 +102,22 @@ namespace StarterAssets
 		private void OnScreenshotModeToggled(object sender, GameEventArgs e)
 		{
 			if (e is not ScreenshotModeToggleEventArgs args) return;
-			
+
 			var isInScreenshotMode = args.IsOn;
 			cursorLocked = !isInScreenshotMode;
 			SetCursorState(!isInScreenshotMode);
 			cursorInputForLook = !isInScreenshotMode;
+
+			// Always clear look input when toggling screenshot mode
+			// This prevents accumulated mouse delta from causing camera jumps
 			look = Vector2.zero;
+
+			// When exiting screenshot mode, ignore the next look input frame
+			// to prevent any accumulated delta from being applied
+			if (!isInScreenshotMode)
+			{
+				_ignoreNextLookInput = true;
+			}
 		}
 	}
 	
