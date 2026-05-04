@@ -3,6 +3,7 @@ Shader "Hidden/BlitCopy"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _AlphaAware ("Alpha Aware", Float) = 0
     }
     SubShader
     {
@@ -30,6 +31,7 @@ Shader "Hidden/BlitCopy"
             };
 
             sampler2D _MainTex;
+            float _AlphaAware;
 
             v2f vert (appdata v)
             {
@@ -41,7 +43,16 @@ Shader "Hidden/BlitCopy"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                return tex2D(_MainTex, i.uv);
+                fixed4 col = tex2D(_MainTex, i.uv);
+
+                // If alpha-aware mode is enabled, output 1 for opaque pixels, 0 for transparent
+                if (_AlphaAware > 0.5)
+                {
+                    return col.a > 0.5 ? 1.0 : 0.0;
+                }
+
+                // Otherwise, just copy the texture as-is
+                return col;
             }
             ENDCG
         }

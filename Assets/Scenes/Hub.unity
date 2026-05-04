@@ -507,9 +507,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51e495c002d940758764ae0a9d4de2f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  colorReplaceMaterial: {fileID: 2100000, guid: a06e50984dfefbb43bec5e34bf1660b1, type: 2}
+  hoverOutlineMaterial: {fileID: 2100000, guid: a06e50984dfefbb43bec5e34bf1660b1, type: 2}
   floodFillShader: {fileID: 7200000, guid: 369a3e06fd834b18804e391c787e1098, type: 3}
-  replaceColor: {r: 1, g: 0.88235295, b: 0, a: 1}
+  outlineColor: {r: 1, g: 0.88235295, b: 0, a: 1}
   tolerance: 0.1
   outlineWidth: 4
   shapeComparor: {fileID: 1714258210}

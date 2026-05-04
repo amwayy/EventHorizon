@@ -2,6 +2,7 @@
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 
 public class ScreenshotController : MonoBehaviour
@@ -27,7 +28,7 @@ public class ScreenshotController : MonoBehaviour
     private static readonly int SeedsIn = Shader.PropertyToID("SeedsIn");
     private static readonly int Mask = Shader.PropertyToID("Mask");
 
-    private static ScreenshotController _instance;
+    public static ScreenshotController Instance { get; private set; }
     
     private RenderTexture _maskTexture;
     private RenderTexture _screenCapture;
@@ -40,9 +41,9 @@ public class ScreenshotController : MonoBehaviour
 
     private void Awake()
     {
-        if (_instance == null)
+        if (Instance == null)
         {
-            _instance = this;
+            Instance = this;
             DontDestroyOnLoad(gameObject);
         }
         else
@@ -99,6 +100,8 @@ public class ScreenshotController : MonoBehaviour
         {
             ClearPreviousOutline();
 
+            if (Utility.IsPointerOverCollectiveUI()) return;
+            
             _cam.targetTexture = _screenCapture;
             _cam.Render();
             _cam.targetTexture = null;
@@ -122,14 +125,14 @@ public class ScreenshotController : MonoBehaviour
 
             if (Input.GetMouseButtonDown(0) && shapeComparor)
             {
-                for (var angle = 0f; angle < 360f; angle += 90f)
+                for (var angle = 0; angle < 360; angle += 90)
                 {
-                    var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, out _, angle);
+                    var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle, out _, out var texture);
                     if (isShapeMatched)
                     {
-                        Debug.Log($"match angle: {angle}");
                         ToggleScreenshotState();
-                        EventComponent.Instance.Fire(this, GotCollectiveEventArgs.Create());
+                        var bBoxSize = shapeComparor.GetBBoxSize();
+                        EventComponent.Instance.Fire(this, GotCollectiveEventArgs.Create(angle, bBoxSize, texture));
                         break;
                     }
                 }
@@ -184,7 +187,7 @@ public class ScreenshotController : MonoBehaviour
         floodFillShader.Dispatch(maskKernel, Mathf.CeilToInt(_viewportWidth / 8f), Mathf.CeilToInt(_viewportHeight / 8f), 1);
     }
 
-    private void ToggleScreenshotState()
+    public void ToggleScreenshotState()
     {
         _inScreenshot = !_inScreenshot;
 

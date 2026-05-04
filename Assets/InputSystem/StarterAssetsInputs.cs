@@ -97,6 +97,7 @@ namespace StarterAssets
 			cursorLocked = !isInScreenshotMode;
 			SetCursorState(!isInScreenshotMode);
 			cursorInputForLook = !isInScreenshotMode;
+			look = Vector2.zero;
 		}
 	}
 	
