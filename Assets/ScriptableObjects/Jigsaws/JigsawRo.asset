@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b066373e0d846c085137293551bf9bb, type: 3}
   m_Name: JigsawRo
   m_EditorClassIdentifier: 
+  jigsawName: Ro
   upEdgeType: 0
   downEdgeType: 0
   leftEdgeType: 0
   rightEdgeType: 1
   texture: {fileID: 2800000, guid: 68faf1abae787417db2913c75733f114, type: 3}
-  mesh: {fileID: -3914258611485244550, guid: 4cbc85b9abb174397a0d07bf42e3d483, type: 3}
+  prefab: {fileID: 1076318648344056684, guid: db515dbeb7516456f9ce8515b7b52e23, type: 3}

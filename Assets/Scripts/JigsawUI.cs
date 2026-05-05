@@ -1,3 +1,4 @@
+using DG.Tweening;
 using GameEvent.Args;
 using Riten.Native.Cursors;
 using UnityEngine;
@@ -132,14 +133,26 @@ public class JigsawUI : MonoBehaviour,
     {
         CursorStack.Pop(_closeHandCursorId);
 
-        if (_hoveringSlot && _hoveringSlot.CanPut(_jigsawData))
+        if (!_hoveringSlot) return;
+
+        var slotRect = Utility.GetUIRectScreenRect(_hoveringSlot.RectTransform, _mainCamera);
+        var jigsawRect = Utility.GetUIRectScreenRect(RectTransform, null);
+        jigsawRect = Utility.GetJigsawCoreRect(jigsawRect, _jigsawData.Source);
+        var iou = Utility.IoU(slotRect, jigsawRect);
+        Debug.Log("iou: " + iou);
+
+        if (Mathf.Abs(iou - 1) > 0.1f || !_hoveringSlot.CanPut(_jigsawData))
         {
-            _hoveringSlot.PutJigsaw(_jigsawData);
-            ScreenshotController.Instance.ToggleScreenshotState();
-            CursorStack.Pop(_openHandCursorId);
-            gameObject.SetActive(false);
-            _renderTexture.Release();
+            _outline.DOColor(Color.red, 0.2f).SetLoops(4, LoopType.Yoyo).SetUpdate(true).SetEase(Ease.Linear);
+            _hoveringSlot.Unhighlight();
+            return;
         }
+        
+        _hoveringSlot.PutJigsaw(_jigsawData);
+        ScreenshotController.Instance.ToggleScreenshotState();
+        CursorStack.Pop(_openHandCursorId);
+        gameObject.SetActive(false);
+        _renderTexture.Release();
     }
     
     public static JigsawRuntimeData Rotate(JigsawSO data, int angle)

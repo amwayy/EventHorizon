@@ -1,14 +1,19 @@
-﻿using DG.Tweening;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Image))]
 public class JigsawSlot : MonoBehaviour
 {
-    [SerializeField] private Image jigsawImage;
+    [SerializeField] private JigsawDatabase jigsawDatabase;
+    [SerializeField] private Transform jigsawContainer;
+    
+    public RectTransform RectTransform => _slotImage.rectTransform;
     
     private Image _slotImage;
     private JigsawBoard _board;
+    private bool _isUnlocked;
+    private GameObject _jigsaw;
+    private JigsawSO _jigsawSO;
     
     private void Awake()
     {
@@ -18,7 +23,8 @@ public class JigsawSlot : MonoBehaviour
 
     public void Unlock()
     {
-        jigsawImage.DOFade(0f, 0.5f);
+        _isUnlocked = true;
+        _jigsaw.gameObject.SetActive(false);
         GetComponent<Collider>().enabled = false;
     }
 
@@ -34,14 +40,24 @@ public class JigsawSlot : MonoBehaviour
 
     public bool CanPut(JigsawRuntimeData jigsawData)
     {
+        if (_isUnlocked) return false;
         return _board.CanPut(jigsawData, this);
     }
 
     public void PutJigsaw(JigsawRuntimeData jigsawData)
     {
         _slotImage.enabled = false;
-        jigsawImage.gameObject.SetActive(true);
-        jigsawImage.sprite = Utility.GetOrCreateSprite(jigsawData.Source.texture);
+        if (_jigsawSO == null || _jigsawSO.jigsawName != jigsawData.Source.jigsawName)
+        {
+            if (_jigsaw)
+            {
+                _jigsaw.gameObject.SetActive(false);   
+            }
+            _jigsaw = Instantiate(jigsawData.Source.prefab, jigsawContainer);
+            _jigsaw.transform.localPosition = Vector3.zero;
+            _jigsaw.transform.localRotation = Quaternion.identity;
+            _jigsawSO = jigsawData.Source;
+        }
         transform.localRotation = Quaternion.Euler(0, 0, jigsawData.RotateAngle);
         _board.Put(jigsawData, this);
     }
