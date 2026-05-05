@@ -1,3 +1,4 @@
+using GameEvent.Args;
 using Riten.Native.Cursors;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -23,6 +24,7 @@ public class JigsawUI : MonoBehaviour,
     IEndDragHandler
 {
     [SerializeField] private JigsawDatabase jigsawDatabase;
+    [SerializeField] private RawImage rawImage;
     
     public RectTransform RectTransform => _rectTransform;
     
@@ -35,8 +37,8 @@ public class JigsawUI : MonoBehaviour,
     private Canvas _canvas;
     private Camera _mainCamera;
     private JigsawSlot _hoveringSlot;
-    private Image _image;
     private JigsawRuntimeData _jigsawData;
+    private RenderTexture _renderTexture;
 
     private void Awake()
     {
@@ -45,7 +47,6 @@ public class JigsawUI : MonoBehaviour,
         _outline = GetComponent<Outline>();
         _rectTransform = GetComponent<RectTransform>();
         _canvas = GetComponentInParent<Canvas>();
-        _image = GetComponent<Image>();
     }
 
     private void OnEnable()
@@ -53,13 +54,14 @@ public class JigsawUI : MonoBehaviour,
         _outline.enabled = false;
     }
 
-    public void Init(Texture2D texture, int rotateAngle)
+    public void Init(CapturedJigsawEventArgs args)
     {
-        _image.sprite = Utility.GetOrCreateSprite(texture);
-        transform.localRotation = Quaternion.Euler(0, 0, rotateAngle);
-        var jigsawData = jigsawDatabase.allJigsaws.Find(data => data.texture == texture);
-        _jigsawData = Rotate(jigsawData, rotateAngle);
-        _jigsawData.RotateAngle = rotateAngle;
+        _renderTexture = args.CapturedJigsawRT;
+        rawImage.texture = _renderTexture;
+        rawImage.rectTransform.sizeDelta = new Vector2(args.CapturedJigsawRT.width, args.CapturedJigsawRT.height);
+        rawImage.rectTransform.anchoredPosition = args.BBoxCenter;
+        rawImage.color = args.Color;
+        _jigsawData = Rotate(args.JigsawData, args.Angle);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -136,6 +138,7 @@ public class JigsawUI : MonoBehaviour,
             ScreenshotController.Instance.ToggleScreenshotState();
             CursorStack.Pop(_openHandCursorId);
             gameObject.SetActive(false);
+            _renderTexture.Release();
         }
     }
     
@@ -156,6 +159,8 @@ public class JigsawUI : MonoBehaviour,
         {
             result = Rotate90(result);
         }
+        
+        result.RotateAngle = angle;
 
         return result;
     }

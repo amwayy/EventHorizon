@@ -115,29 +115,58 @@ public class ScreenshotController : MonoBehaviour
             hoverOutlineMaterial.SetInt(OutlineWidth, outlineWidth);
             hoverOutlineMaterial.SetColor(OutlineColor, outlineColor);
 
-            // // real time shape test
-            // var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, out var similarity);
-            // outlineColor = isShapeMatched ? Color.green : Color.red;
-            // if (Input.GetMouseButtonDown(0))
-            // {
-            //     Debug.Log("similarity: " + similarity);
-            // }
-
             if (Input.GetMouseButtonDown(0) && shapeComparor)
             {
                 for (var angle = 0; angle < 360; angle += 90)
                 {
-                    var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle, out _, out var texture);
-                    if (isShapeMatched)
-                    {
-                        ToggleScreenshotState();
-                        var bBoxSize = shapeComparor.GetBBoxSize();
-                        EventComponent.Instance.Fire(this, GotCollectiveEventArgs.Create(angle, bBoxSize, texture));
-                        break;
-                    }
+                    var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle, 
+                        out var jigsawData, out var capturedRegionRT);
+                    if (!isShapeMatched) continue;
+                    
+                    ToggleScreenshotState();
+
+                    // Convert RFloat mask to ARGB32 with transparency
+                    var displayRT = new RenderTexture(capturedRegionRT.width, capturedRegionRT.height, 0, RenderTextureFormat.ARGB32);
+                    displayRT.enableRandomWrite = true;
+                    displayRT.Create();
+
+                    // Use MaskExtract shader to convert: white foreground, transparent background
+                    var maskMaterial = new Material(Shader.Find("Hidden/MaskToTransparent"));
+                    Graphics.Blit(capturedRegionRT, displayRT, maskMaterial);
+                    Destroy(maskMaterial);
+
+                    // Release the original RFloat mask
+                    capturedRegionRT.Release();
+
+                    var bBoxCenter = shapeComparor.GetBBoxCenter();
+                    var color = GetColorFromRT(_screenCapture, mousePos);
+                    EventComponent.Instance.Fire(this,
+                        CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color));
+                    break;
                 }
             }
         }
+    }
+    
+    private Color GetColorFromRT(RenderTexture rt, Vector2 mousePos)
+    {
+        // 👉 屏幕坐标 → RT坐标
+        int x = Mathf.Clamp((int)(mousePos.x / Screen.width * rt.width), 0, rt.width - 1);
+        int y = Mathf.Clamp((int)(mousePos.y / Screen.height * rt.height), 0, rt.height - 1);
+
+        RenderTexture current = RenderTexture.active;
+        RenderTexture.active = rt;
+
+        Texture2D tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        tex.ReadPixels(new Rect(x, y, 1, 1), 0, 0);
+        tex.Apply();
+
+        Color col = tex.GetPixel(0, 0);
+
+        RenderTexture.active = current;
+        Destroy(tex);
+
+        return col;
     }
 
     private void FloodFillGPU(Vector2 seedPos)

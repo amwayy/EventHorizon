@@ -14,12 +14,12 @@ public class Jigsaw : MonoBehaviour
     {
         _mainCamera = Camera.main;
         
-        EventComponent.Instance.Subscribe(GotCollectiveEventArgs.EventId, OnGotCollective);
+        EventComponent.Instance.Subscribe(CapturedJigsawEventArgs.EventId, OnGotCollective);
     }
 
     private void OnDestroy()
     {
-        EventComponent.Instance.Unsubscribe(GotCollectiveEventArgs.EventId, OnGotCollective);
+        EventComponent.Instance.Unsubscribe(CapturedJigsawEventArgs.EventId, OnGotCollective);
     }
 
     private void OnGotCollective(object sender, GameEventArgs e)
@@ -28,14 +28,12 @@ public class Jigsaw : MonoBehaviour
 
         if (!Physics.Raycast(ray, out var hit)) return;
         
-        if (worldObjects.Contains(hit.collider.gameObject) && e is GotCollectiveEventArgs args)
+        if (worldObjects.Contains(hit.collider.gameObject))
         {
             foreach (var worldObject in worldObjects)
             {
                 worldObject.SetActive(false);
             }
-            var screenPosition = _mainCamera.WorldToScreenPoint(transform.position);
-            CollectedJigsawsUI.Instance.AddJigsaw(screenPosition, args.Angle, args.BBoxSize, args.TargetTexture);
         }
     }
 }

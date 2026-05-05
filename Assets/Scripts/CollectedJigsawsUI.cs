@@ -1,5 +1,7 @@
+using System;
+using GameEvent;
+using GameEvent.Args;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace DefaultNamespace
 {
@@ -21,12 +23,22 @@ namespace DefaultNamespace
             }
         }
 
-        public void AddJigsaw(Vector3 screenPosition, int angle, Vector2Int size, Texture2D texture)
+        private void Start()
         {
+            EventComponent.Instance.Subscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
+        }
+
+        private void OnDestroy()
+        {
+            EventComponent.Instance.Unsubscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
+        }
+
+        private void OnCapturedJigsaw(object sender, GameEventArgs e)
+        {
+            if (e is not CapturedJigsawEventArgs args) return;
+            
             var jigsawUI = Utility.GetOrAdd(jigsawUIPrefab, transform);
-            jigsawUI.Init(texture, angle);
-            jigsawUI.RectTransform.position = screenPosition;
-            jigsawUI.RectTransform.sizeDelta = size;
+            jigsawUI.Init(args);
         }
     }
 }

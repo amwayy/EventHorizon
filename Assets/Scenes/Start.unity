@@ -614,7 +614,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 022103f9ac1443f0ade3c0d06bd80059, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jigsawUIPrefab: {fileID: 6799746389407494024, guid: 325c6fa69324d43d6a63664757cd496d, type: 3}
+  jigsawUIPrefab: {fileID: 893386787515067472, guid: d18e6d81d845e4a86a18400fa3ec48bd, type: 3}
 --- !u!1001 &361280542
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1951,10 +1951,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05cde7336a95a5c42a5c765f6ce1231b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  referenceMasks:
-  - {fileID: 2800000, guid: 4e48eaeeb4a045c47b66f474668ad5aa, type: 3}
-  - {fileID: 2800000, guid: 68faf1abae787417db2913c75733f114, type: 3}
-  - {fileID: 2800000, guid: 7745283d0eec943c994b948ffb46c76a, type: 3}
+  jigsawDatabase: {fileID: 11400000, guid: 32e0a90a7c5744ef4993719b39afa071, type: 2}
   similarityThreshold: 0.85
   shapeCompareShader: {fileID: 7200000, guid: 1ac851e043d384779b6887b1a73875ae, type: 3}
 --- !u!4 &977893229

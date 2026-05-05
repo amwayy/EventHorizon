@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class ShapeComparor : MonoBehaviour
 {
-    [SerializeField] private Texture2D[] referenceMasks;
+    [SerializeField] private JigsawDatabase jigsawDatabase;
     [SerializeField] [Range(0f, 1f)] private float similarityThreshold = 0.85f;
     [SerializeField] private ComputeShader shapeCompareShader;
 
@@ -25,11 +25,10 @@ public class ShapeComparor : MonoBehaviour
     private static readonly int CenterX = Shader.PropertyToID("CenterX");
     private static readonly int CenterY = Shader.PropertyToID("CenterY");
 
-    private Dictionary<RenderTexture, Texture2D> _normalizedReferenceRTs = new();
+    private Dictionary<RenderTexture, JigsawSO> _normalizedReferenceRTs = new();
     private ComputeBuffer _resultBuffer;
     private Material _blitMaterial;
-    private int _bBoxHeight;
-    private int _bBoxWidth;
+    private Vector2Int _bBoxCenter = new();
 
     private void Awake()
     {
@@ -67,8 +66,9 @@ public class ShapeComparor : MonoBehaviour
         if (!_blitMaterial)
             _blitMaterial = new Material(Shader.Find("Hidden/BlitCopy"));
 
-        foreach (var referenceMask in referenceMasks)
+        foreach (var data in jigsawDatabase.allJigsaws)
         {
+            var referenceMask = data.texture;
             var refRT = new RenderTexture(referenceMask.width, referenceMask.height, 0, RenderTextureFormat.RFloat);
             refRT.enableRandomWrite = true;
             refRT.Create();
@@ -83,38 +83,36 @@ public class ShapeComparor : MonoBehaviour
             Graphics.Blit(referenceMask, refRT, _blitMaterial);
             _blitMaterial.SetFloat("_AlphaAware", 0f);
 
-            var rt = NormalizeRegion(refRT, 256, 256);
-            _normalizedReferenceRTs[rt] = referenceMask;
+            var rt = NormalizeRegion(refRT, 256, 256, out var croppedRT);
+            croppedRT.Release();
+            _normalizedReferenceRTs[rt] = data;
 
             refRT.Release();
         }
     }
 
-    private float CompareShape(RenderTexture regionMask, float rotateAngle, out Texture2D targetTexture)
+    private float CompareShape(RenderTexture regionMask, int rotateAngle, 
+        out JigsawSO targetJigsawData, out RenderTexture croppedRT)
     {
-        var normalizedRegion = NormalizeRegion(regionMask, 256, 256);
+        var normalizedRegion = NormalizeRegion(regionMask, 256, 256, out croppedRT);
 
         RenderTexture rotatedRegion = normalizedRegion;
-        if (Mathf.Abs(rotateAngle) > 0.01f)
+        var hasRotation = Mathf.Abs(rotateAngle) > 0;
+        if (hasRotation)
         {
             rotatedRegion = RotateTexture(normalizedRegion, rotateAngle);
             normalizedRegion.Release();
         }
 
         var maxSimilarity = 0f;
-        targetTexture = null;
-        foreach (var (referenceRT, texture) in _normalizedReferenceRTs)
+        targetJigsawData = null;
+        foreach (var (referenceRT, data) in _normalizedReferenceRTs)
         {
             var similarity = CompareTemplates(rotatedRegion, referenceRT);
             if (similarity > maxSimilarity)
             {
                 maxSimilarity = similarity;
-                targetTexture = texture;
-            }
-            if (texture.name is "Jigsaw2" or "Jigsaw3" && rotateAngle == 0f)
-            {
-                SaveMaskVisualization(rotatedRegion, $"region_{texture.name}.png");
-                SaveMaskVisualization(referenceRT, $"reference_{texture.name}.png");
+                targetJigsawData = data;
             }
         }
         rotatedRegion.Release();
@@ -192,8 +190,9 @@ public class ShapeComparor : MonoBehaviour
         return similarity;
     }
 
-    private RenderTexture NormalizeRegion(RenderTexture source, int targetWidth, int targetHeight)
+    private RenderTexture NormalizeRegion(RenderTexture source, int targetWidth, int targetHeight, out RenderTexture croppedRT)
     {
+        croppedRT = null;
         if (!shapeCompareShader)
         {
             // Debug.LogError("ShapeCompareShader not assigned");
@@ -231,28 +230,30 @@ public class ShapeComparor : MonoBehaviour
             return empty;
         }
 
-        _bBoxWidth = maxX - minX + 1;
-        _bBoxHeight = maxY - minY + 1;
+        var bBoxWidth = maxX - minX + 1;
+        var bBoxHeight = maxY - minY + 1;
+        _bBoxCenter.x = (minX + maxX) / 2;
+        _bBoxCenter.y = (minY + maxY) / 2;
 
-        var cropped = new RenderTexture(_bBoxWidth, _bBoxHeight, 0, RenderTextureFormat.RFloat);
-        cropped.enableRandomWrite = true;
-        cropped.Create();
+        croppedRT = new RenderTexture(bBoxWidth, bBoxHeight, 0, RenderTextureFormat.RFloat);
+        croppedRT.enableRandomWrite = true;
+        croppedRT.Create();
 
         var cropKernel = shapeCompareShader.FindKernel("CropRegion");
         shapeCompareShader.SetTexture(cropKernel, SourceTex, source);
-        shapeCompareShader.SetTexture(cropKernel, CroppedTex, cropped);
+        shapeCompareShader.SetTexture(cropKernel, CroppedTex, croppedRT);
         shapeCompareShader.SetInt(MinX, minX);
         shapeCompareShader.SetInt(MinY, minY);
 
-        shapeCompareShader.Dispatch(cropKernel, Mathf.CeilToInt(_bBoxWidth / 8f), Mathf.CeilToInt(_bBoxHeight / 8f), 1);
+        shapeCompareShader.Dispatch(cropKernel, Mathf.CeilToInt(bBoxWidth / 8f), Mathf.CeilToInt(bBoxHeight / 8f), 1);
 
-        var scale = Mathf.Min((float)targetWidth / _bBoxWidth, (float)targetHeight / _bBoxHeight);
-        var scaledWidth = Mathf.RoundToInt(_bBoxWidth * scale);
-        var scaledHeight = Mathf.RoundToInt(_bBoxHeight * scale);
+        var scale = Mathf.Min((float)targetWidth / bBoxWidth, (float)targetHeight / bBoxHeight);
+        var scaledWidth = Mathf.RoundToInt(bBoxWidth * scale);
+        var scaledHeight = Mathf.RoundToInt(bBoxHeight * scale);
 
         var scaledRT = new RenderTexture(scaledWidth, scaledHeight, 0, RenderTextureFormat.RFloat);
         scaledRT.Create();
-        Graphics.Blit(cropped, scaledRT);
+        Graphics.Blit(croppedRT, scaledRT);
 
         var normalized = new RenderTexture(targetWidth, targetHeight, 0, RenderTextureFormat.RFloat);
         normalized.enableRandomWrite = true;
@@ -277,22 +278,23 @@ public class ShapeComparor : MonoBehaviour
         GL.PopMatrix();
         Graphics.SetRenderTarget(null);
 
-        cropped.Release();
         scaledRT.Release();
 
         return normalized;
     }
 
-    public bool IsShapeSimilar(RenderTexture regionMask, float rotateAngle,
-        out float similarity, out Texture2D targetTexture)
+    public bool IsShapeSimilar(RenderTexture regionMask, int rotateAngle, 
+        out JigsawSO jigsawData, out RenderTexture capturedRegionRT)
     {
-        similarity = CompareShape(regionMask, rotateAngle, out targetTexture);
-        return similarity >= similarityThreshold;
+        var similarity = CompareShape(regionMask, rotateAngle, out jigsawData, out capturedRegionRT);
+        var isSimilar = similarity >= similarityThreshold;
+        if (!isSimilar) capturedRegionRT.Release();
+        return isSimilar;
     }
-
-    public Vector2Int GetBBoxSize()
+    
+    public Vector2Int GetBBoxCenter()
     {
-        return new Vector2Int(_bBoxWidth, _bBoxHeight);
+        return _bBoxCenter;
     }
     
     private void SaveMaskVisualization(RenderTexture mask, string filename)
