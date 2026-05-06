@@ -15,6 +15,132 @@ MonoBehaviour:
   m_Active: 1
   material: {fileID: 2100000, guid: c051daf3c1543d948a83040ef5ec0d94, type: 2}
   maskRT: {fileID: 8400000, guid: 386f8a10ef053ec46bd5a4b3e2fbb1a6, type: 2}
+--- !u!114 &-8466110204550482366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2a052916d162d3448e654173d8cc8e3, type: 3}
+  m_Name: MKEdgeDetectionRendererFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  workMode: 0
+  precision:
+    _value: 1
+  largeKernel:
+    _value: 0
+  mediumKernel:
+    _value: 0
+  smallKernel:
+    _value: 0
+  inputData:
+    _value: 3
+  lineHardness:
+    _value: 0.5
+    _minValue: 0
+    _maxValue: 1
+  fade:
+    _value: 0
+  lineSizeMatchFactor:
+    _value: 0.5
+    _minValue: 0
+    _maxValue: 1
+  globalLineSize:
+    _value: 0
+    _minValue: 0
+    _maxValue: 3
+  depthLineSize:
+    _value: 1
+    _minValue: 0
+    _maxValue: 2
+  normalLineSize:
+    _value: 1
+    _minValue: 0
+    _maxValue: 2
+  depthFadeLimits:
+    _minValue: 0
+    _maxValue: 1
+    _minLimit: 0
+    _maxLimit: 1
+  normalFadeLimits:
+    _minValue: 0
+    _maxValue: 1
+    _minLimit: 0
+    _maxLimit: 1
+  depthThreshold:
+    _minValue: 0.1
+    _maxValue: 1
+    _minLimit: 0
+    _maxLimit: 1
+  lineColor:
+    _value: {r: 0, g: 0, b: 0, a: 1}
+    _useAlpha: 1
+    _useHDR: 0
+  overlayColor:
+    _value: {r: 1, g: 1, b: 1, a: 0}
+    _useAlpha: 1
+    _useHDR: 0
+  depthNearFade:
+    _value: 10
+  depthFarFade:
+    _value: 30
+  normalNearFade:
+    _value: 5
+  normalsFarFade:
+    _value: 20
+  normalThreshold:
+    _minValue: 0.1
+    _maxValue: 1
+    _minLimit: 0
+    _maxLimit: 1
+  sceneColorThreshold:
+    _minValue: 0.1
+    _maxValue: 1
+    _minLimit: 0
+    _maxLimit: 1
+  sceneColorLineSize:
+    _value: 1
+    _minValue: 0
+    _maxValue: 2
+  sceneColorNearFade:
+    _value: 0
+  sceneColorFarFade:
+    _value: 10
+  sceneColorFadeLimits:
+    _minValue: 0
+    _maxValue: 1
+    _minLimit: 0
+    _maxLimit: 1
+  visualizeEdges:
+    _value: 0
+  enhanceDetails:
+    _value: 0
+  sketch:
+    _value: 0
+  sketchIntensity:
+    _value: 0.333
+    _minValue: 0
+    _maxValue: 1
+  sketchFrequency:
+    _value: 4
+  sketchAdditionalNoiseMap:
+    _value: {fileID: 0}
+  sketchFadeLimits:
+    _minValue: 0
+    _maxValue: 1
+    _minLimit: 0
+    _maxLimit: 1
+  sketchNearFade:
+    _value: 10
+  sketchFarFade:
+    _value: 30
+  workflow:
+    _value: 0
+  _propertiesInitialized: 0
 --- !u!114 &-110163239451737313
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -56,7 +182,8 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: 7833122117494664109}
   - {fileID: -110163239451737313}
-  m_RendererFeatureMap: ad6b866f10d7b46c1f432c0d1e9f78fe
+  - {fileID: -8466110204550482366}
+  m_RendererFeatureMap: ad6b866f10d7b46c1f432c0d1e9f78fe427675d49f55828a
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
