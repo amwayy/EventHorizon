@@ -1,10 +1,9 @@
 ﻿using System.Linq;
-using DefaultNamespace;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
 
-public class Jigsaw : MonoBehaviour
+public class JigsawCollective : MonoBehaviour
 {
     [SerializeField] private GameObject[] worldObjects;
 
@@ -24,11 +23,9 @@ public class Jigsaw : MonoBehaviour
 
     private void OnGotCollective(object sender, GameEventArgs e)
     {
-        var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-
-        if (!Physics.Raycast(ray, out var hit)) return;
+        if (e is not CapturedJigsawEventArgs args) return;
         
-        if (worldObjects.Contains(hit.collider.gameObject))
+        if (worldObjects.Contains(args.HitGameObject))
         {
             foreach (var worldObject in worldObjects)
             {

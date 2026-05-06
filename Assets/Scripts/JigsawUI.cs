@@ -29,7 +29,7 @@ public class JigsawUI : MonoBehaviour,
     
     public RectTransform RectTransform => _rectTransform;
     
-    private Outline _outline;
+    private UnityEngine.UI.Outline _outline;
     private int _openHandCursorId;
     private int _closeHandCursorId;
     private bool _isHovering;
@@ -45,7 +45,7 @@ public class JigsawUI : MonoBehaviour,
     {
         _mainCamera = Camera.main;
         
-        _outline = GetComponent<Outline>();
+        _outline = GetComponent<UnityEngine.UI.Outline>();
         _rectTransform = GetComponent<RectTransform>();
         _canvas = GetComponentInParent<Canvas>();
     }
@@ -53,6 +53,20 @@ public class JigsawUI : MonoBehaviour,
     private void OnEnable()
     {
         _outline.enabled = false;
+    }
+
+    private void Update()
+    {
+        var ray = _mainCamera.ScreenPointToRay(_rectTransform.position);
+        if (!Physics.Raycast(ray, out var hit) || !hit.collider.TryGetComponent(out JigsawSlot slot))
+        {
+            _hoveringSlot = null;
+        }
+        else
+        {
+            _hoveringSlot = slot;
+            TryPutOnSlot();
+        }
     }
 
     public void Init(CapturedJigsawEventArgs args)
@@ -97,6 +111,8 @@ public class JigsawUI : MonoBehaviour,
         );
 
         _dragOffset = _rectTransform.anchoredPosition - localPoint;
+        
+        transform.SetAsLastSibling();
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -119,8 +135,7 @@ public class JigsawUI : MonoBehaviour,
             _hoveringSlot.Unhighlight();
         }
         var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-        if (!Physics.Raycast(ray, out var hit)) return;
-        if (!hit.collider.TryGetComponent(out JigsawSlot slot))
+        if (!Physics.Raycast(ray, out var hit) || !hit.collider.TryGetComponent(out JigsawSlot slot))
         {
             _hoveringSlot = null;
             return;
@@ -132,30 +147,44 @@ public class JigsawUI : MonoBehaviour,
     public void OnEndDrag(PointerEventData eventData)
     {
         CursorStack.Pop(_closeHandCursorId);
-
+        
         if (!_hoveringSlot) return;
 
+        if (!TryPutOnSlot())
+        {
+            _outline.DOColor(Color.red, 0.2f).SetLoops(4, LoopType.Yoyo).SetUpdate(true).SetEase(Ease.Linear);
+            _hoveringSlot.Unhighlight();
+        }
+        else
+        {
+            CursorStack.Pop(_openHandCursorId);
+            ScreenshotController.Instance.ToggleScreenshotState();
+        }
+    }
+
+    private bool TryPutOnSlot()
+    {
         var slotRect = Utility.GetUIRectScreenRect(_hoveringSlot.RectTransform, _mainCamera);
         var jigsawRect = Utility.GetUIRectScreenRect(RectTransform, null);
         jigsawRect = Utility.GetJigsawCoreRect(jigsawRect, _jigsawData.Source);
         var iou = Utility.IoU(slotRect, jigsawRect);
-        Debug.Log("iou: " + iou);
 
-        if (Mathf.Abs(iou - 1) > 0.1f || !_hoveringSlot.CanPut(_jigsawData))
+        if (Mathf.Abs(iou - 1) > 0.15f)
         {
-            _outline.DOColor(Color.red, 0.2f).SetLoops(4, LoopType.Yoyo).SetUpdate(true).SetEase(Ease.Linear);
-            _hoveringSlot.Unhighlight();
-            return;
+            return false;
+        }
+        if (!_hoveringSlot.CanPut(_jigsawData))
+        {
+            return false;
         }
         
         _hoveringSlot.PutJigsaw(_jigsawData);
-        ScreenshotController.Instance.ToggleScreenshotState();
-        CursorStack.Pop(_openHandCursorId);
-        gameObject.SetActive(false);
         _renderTexture.Release();
+        gameObject.SetActive(false);
+        return true;
     }
     
-    public static JigsawRuntimeData Rotate(JigsawSO data, int angle)
+    private static JigsawRuntimeData Rotate(JigsawSO data, int angle)
     {
         int steps = ((angle % 360) + 360) % 360 / 90;
 

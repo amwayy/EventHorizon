@@ -30,6 +30,19 @@ public class JigsawBoard : MonoBehaviour
 
         int x = index % width;
         int y = index / width;
+        
+        // ❗ 边界限制：Out 不能朝外
+        if (y == 0 && jigsawData.UpEdgeType == JigsawEdgeType.Out)
+            return false;
+
+        if (y == height - 1 && jigsawData.DownEdgeType == JigsawEdgeType.Out)
+            return false;
+
+        if (x == 0 && jigsawData.LeftEdgeType == JigsawEdgeType.Out)
+            return false;
+
+        if (x == width - 1 && jigsawData.RightEdgeType == JigsawEdgeType.Out)
+            return false;
 
         // 👉 上
         if (y > 0)

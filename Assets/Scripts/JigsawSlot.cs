@@ -14,18 +14,21 @@ public class JigsawSlot : MonoBehaviour
     private bool _isUnlocked;
     private GameObject _jigsaw;
     private JigsawSO _jigsawSO;
+    private Collider _collider;
     
     private void Awake()
     {
         _slotImage = GetComponent<Image>();
         _board = GetComponentInParent<JigsawBoard>();
+        _collider = GetComponent<Collider>();
     }
 
     public void Unlock()
     {
+        _slotImage.enabled = false;
         _isUnlocked = true;
         _jigsaw.gameObject.SetActive(false);
-        GetComponent<Collider>().enabled = false;
+        _collider.enabled = false;
     }
 
     public void Highlight()
@@ -46,8 +49,7 @@ public class JigsawSlot : MonoBehaviour
 
     public void PutJigsaw(JigsawRuntimeData jigsawData)
     {
-        _slotImage.enabled = false;
-        if (_jigsawSO == null || _jigsawSO.jigsawName != jigsawData.Source.jigsawName)
+        if (!_jigsawSO || _jigsawSO.jigsawName != jigsawData.Source.jigsawName)
         {
             if (_jigsaw)
             {

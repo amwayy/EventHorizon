@@ -140,8 +140,14 @@ public class ScreenshotController : MonoBehaviour
 
                     var bBoxCenter = shapeComparor.GetBBoxCenter();
                     var color = GetColorFromRT(_screenCapture, mousePos);
+                    var ray = _cam.ScreenPointToRay(Input.mousePosition);
+                    GameObject hitGameObject = null;
+                    if (Physics.Raycast(ray, out var hit))
+                    { 
+                        hitGameObject = hit.collider.gameObject;
+                    }
                     EventComponent.Instance.Fire(this,
-                        CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color));
+                        CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color, hitGameObject));
                     break;
                 }
             }

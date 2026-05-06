@@ -1222,7 +1222,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 7bc77ee3271c11646bf26aa75b62644c, type: 2}
+  - {fileID: 2100000, guid: 4a11df9d2662c442eba7012808471e96, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1692,7 +1692,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05cde7336a95a5c42a5c765f6ce1231b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  referenceMask: {fileID: 2800000, guid: 4e48eaeeb4a045c47b66f474668ad5aa, type: 3}
+  jigsawDatabase: {fileID: 0}
   similarityThreshold: 0.85
   shapeCompareShader: {fileID: 0}
 --- !u!1001 &1689300501
