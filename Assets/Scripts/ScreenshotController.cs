@@ -50,6 +50,9 @@ public class ScreenshotController : MonoBehaviour
         {
             Destroy(gameObject);
         }
+        
+        Screen.fullScreenMode = FullScreenMode.ExclusiveFullScreen;
+        Screen.SetResolution(480, 270, true);
     }
 
     private void Start()
@@ -66,11 +69,11 @@ public class ScreenshotController : MonoBehaviour
         _maskTexture.enableRandomWrite = true;
         _maskTexture.Create();
 
-        _seedBuffers[0] = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RGFloat);
+        _seedBuffers[0] = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
         _seedBuffers[0].enableRandomWrite = true;
         _seedBuffers[0].Create();
 
-        _seedBuffers[1] = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RGFloat);
+        _seedBuffers[1] = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
         _seedBuffers[1].enableRandomWrite = true;
         _seedBuffers[1].Create();
 
@@ -178,9 +181,9 @@ public class ScreenshotController : MonoBehaviour
     private void FloodFillGPU(Vector2 seedPos)
     {
         var initKernel = floodFillShader.FindKernel("InitSeeds");
-        var jfaKernel = floodFillShader.FindKernel("JumpFlood");
+        var propagateKernel = floodFillShader.FindKernel("WavefrontPropagate");
         var maskKernel = floodFillShader.FindKernel("GenerateMask");
-        
+
         floodFillShader.SetTexture(initKernel, Source, _screenCapture);
         floodFillShader.SetTexture(initKernel, SeedsOut, _seedBuffers[0]);
         floodFillShader.SetTexture(initKernel, OriginalMask, _originalMask);
@@ -188,37 +191,25 @@ public class ScreenshotController : MonoBehaviour
         floodFillShader.SetFloat(Tolerance, tolerance);
         floodFillShader.SetInts(TexSize, _viewportWidth, _viewportHeight);
         floodFillShader.Dispatch(initKernel, Mathf.CeilToInt(_viewportWidth / 8f), Mathf.CeilToInt(_viewportHeight / 8f), 1);
-        
+
+        // Wavefront propagation: max iterations = max dimension (worst case: diagonal)
         var maxDim = Mathf.Max(_viewportWidth, _viewportHeight);
-        var steps = Mathf.CeilToInt(Mathf.Log(maxDim, 2));
         var read = 0;
 
-        for (var i = 0; i < steps; i++)
+        for (var i = 0; i < maxDim; i++)
         {
             var write = 1 - read;
-            var stepSize = 1 << (steps - i - 1);
 
-            floodFillShader.SetInt(StepSize, stepSize);
-            floodFillShader.SetTexture(jfaKernel, SeedsIn, _seedBuffers[read]);
-            floodFillShader.SetTexture(jfaKernel, SeedsOut, _seedBuffers[write]);
-            floodFillShader.SetTexture(jfaKernel, OriginalMask, _originalMask);
-            floodFillShader.Dispatch(jfaKernel, Mathf.CeilToInt(_viewportWidth / 8f), Mathf.CeilToInt(_viewportHeight / 8f), 1);
+            floodFillShader.SetTexture(propagateKernel, SeedsIn, _seedBuffers[read]);
+            floodFillShader.SetTexture(propagateKernel, SeedsOut, _seedBuffers[write]);
+            floodFillShader.SetTexture(propagateKernel, OriginalMask, _originalMask);
+            floodFillShader.Dispatch(propagateKernel, Mathf.CeilToInt(_viewportWidth / 8f), Mathf.CeilToInt(_viewportHeight / 8f), 1);
 
             read = write;
         }
 
-        // Extra pass with step size 1 to fill gaps
-        var finalWrite = 1 - read;
-        floodFillShader.SetInt(StepSize, 1);
-        floodFillShader.SetTexture(jfaKernel, SeedsIn, _seedBuffers[read]);
-        floodFillShader.SetTexture(jfaKernel, SeedsOut, _seedBuffers[finalWrite]);
-        floodFillShader.SetTexture(jfaKernel, OriginalMask, _originalMask);
-        floodFillShader.Dispatch(jfaKernel, Mathf.CeilToInt(_viewportWidth / 8f), Mathf.CeilToInt(_viewportHeight / 8f), 1);
-        read = finalWrite;
-        
         floodFillShader.SetTexture(maskKernel, SeedsIn, _seedBuffers[read]);
         floodFillShader.SetTexture(maskKernel, Mask, _maskTexture);
-        floodFillShader.SetTexture(maskKernel, OriginalMask, _originalMask);
         floodFillShader.Dispatch(maskKernel, Mathf.CeilToInt(_viewportWidth / 8f), Mathf.CeilToInt(_viewportHeight / 8f), 1);
     }
 
