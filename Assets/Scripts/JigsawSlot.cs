@@ -7,9 +7,11 @@ public class JigsawSlot : MonoBehaviour
 {
     [SerializeField] private JigsawDatabase jigsawDatabase;
     [SerializeField] private Transform jigsawContainer;
+    [SerializeField] private Image textureImage;
     
     private static readonly int DissolveStrength = Shader.PropertyToID("_DissolveStrength");
-    
+    private static readonly int Color1 = Shader.PropertyToID("_Color");
+
     public RectTransform RectTransform => _slotImage.rectTransform;
     
     private Image _slotImage;
@@ -17,7 +19,6 @@ public class JigsawSlot : MonoBehaviour
     private bool _isUnlocked;
     private GameObject _jigsaw;
     private JigsawSO _jigsawSO;
-    private Collider _collider;
     private MaterialPropertyBlock _mpb;
     private Renderer _rd;
 
@@ -25,16 +26,15 @@ public class JigsawSlot : MonoBehaviour
     {
         _slotImage = GetComponent<Image>();
         _board = GetComponentInParent<JigsawBoard>();
-        _collider = GetComponent<Collider>();
         _mpb = new MaterialPropertyBlock();
     }
 
     public void Unlock()
     {
         _slotImage.enabled = false;
+        textureImage.enabled = false;
         _isUnlocked = true;
         Dissolve();
-        _collider.enabled = false;
     }
 
     public void Highlight()
@@ -53,7 +53,7 @@ public class JigsawSlot : MonoBehaviour
         return _board.CanPut(jigsawData, this);
     }
 
-    public void PutJigsaw(JigsawRuntimeData jigsawData)
+    public void PutJigsaw(JigsawRuntimeData jigsawData, Color color)
     {
         if (!_jigsawSO || _jigsawSO.jigsawName != jigsawData.Source.jigsawName)
         {
@@ -66,6 +66,10 @@ public class JigsawSlot : MonoBehaviour
             _jigsaw.transform.localRotation = Quaternion.identity;
             _jigsawSO = jigsawData.Source;
             _rd = _jigsaw.GetComponentInChildren<Renderer>();
+            
+            _rd.GetPropertyBlock(_mpb);
+            _mpb.SetColor(Color1, color);
+            _rd.SetPropertyBlock(_mpb);
         }
         transform.localRotation = Quaternion.Euler(0, 0, jigsawData.RotateAngle);
         _board.Put(jigsawData, this);
@@ -83,6 +87,6 @@ public class JigsawSlot : MonoBehaviour
             _rd.SetPropertyBlock(_mpb);
 
         }, 1f, 1f).OnComplete(
-            () => _jigsaw.gameObject.SetActive(false));
+            () => gameObject.SetActive(false));
     }
 }

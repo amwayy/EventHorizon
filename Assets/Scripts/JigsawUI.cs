@@ -29,7 +29,7 @@ public class JigsawUI : MonoBehaviour,
     
     public RectTransform RectTransform => _rectTransform;
     
-    private UnityEngine.UI.Outline _outline;
+    private Outline _outline;
     private int _openHandCursorId;
     private int _closeHandCursorId;
     private bool _isHovering;
@@ -40,6 +40,7 @@ public class JigsawUI : MonoBehaviour,
     private JigsawSlot _hoveringSlot;
     private JigsawRuntimeData _jigsawData;
     private RenderTexture _renderTexture;
+    private int _angle;
 
     private void Awake()
     {
@@ -76,6 +77,7 @@ public class JigsawUI : MonoBehaviour,
         rawImage.rectTransform.sizeDelta = new Vector2(args.CapturedJigsawRT.width, args.CapturedJigsawRT.height);
         rawImage.rectTransform.anchoredPosition = args.BBoxCenter;
         rawImage.color = args.Color;
+        _angle = args.Angle;
         _jigsawData = Rotate(args.JigsawData, args.Angle);
     }
 
@@ -166,7 +168,7 @@ public class JigsawUI : MonoBehaviour,
     {
         var slotRect = Utility.GetUIRectScreenRect(_hoveringSlot.RectTransform, _mainCamera);
         var jigsawRect = Utility.GetUIRectScreenRect(RectTransform, null);
-        jigsawRect = Utility.GetJigsawCoreRect(jigsawRect, _jigsawData.Source);
+        jigsawRect = Utility.GetJigsawCoreRect(jigsawRect, _jigsawData.Source, _angle);
         var iou = Utility.IoU(slotRect, jigsawRect);
 
         if (Mathf.Abs(iou - 1) > 0.15f)
@@ -178,7 +180,8 @@ public class JigsawUI : MonoBehaviour,
             return false;
         }
         
-        _hoveringSlot.PutJigsaw(_jigsawData);
+        var color = rawImage.color;
+        _hoveringSlot.PutJigsaw(_jigsawData, color);
         _renderTexture.Release();
         gameObject.SetActive(false);
         return true;

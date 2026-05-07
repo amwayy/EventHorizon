@@ -93,28 +93,56 @@ public static class Utility
     
     private const float JigsawKnobRatio = 0.3f;
     
-    public static Rect GetJigsawCoreRect(Rect fullRect, JigsawSO jigsawData)
+    public static Rect GetJigsawCoreRect(
+        Rect fullRect,
+        JigsawSO jigsawData,
+        int rotation
+    )
     {
+        rotation = ((rotation % 360) + 360) % 360;
+
+        JigsawEdgeType left = jigsawData.leftEdgeType;
+        JigsawEdgeType right = jigsawData.rightEdgeType;
+        JigsawEdgeType up = jigsawData.upEdgeType;
+        JigsawEdgeType down = jigsawData.downEdgeType;
+
+        // 根据旋转重新映射边
+        switch (rotation)
+        {
+            case 90:
+                (left, up, right, down) = (down, left, up, right);
+                break;
+
+            case 180:
+                (left, right) = (right, left);
+                (up, down) = (down, up);
+                break;
+
+            case 270:
+                (left, up, right, down) = (up, right, down, left);
+                break;
+        }
+
         int outX = 0;
-        if (jigsawData.leftEdgeType == JigsawEdgeType.Out) outX++;
-        if (jigsawData.rightEdgeType == JigsawEdgeType.Out) outX++;
+        if (left == JigsawEdgeType.Out) outX++;
+        if (right == JigsawEdgeType.Out) outX++;
 
         int outY = 0;
-        if (jigsawData.upEdgeType == JigsawEdgeType.Out) outY++;
-        if (jigsawData.downEdgeType == JigsawEdgeType.Out) outY++;
+        if (up == JigsawEdgeType.Out) outY++;
+        if (down == JigsawEdgeType.Out) outY++;
 
-        // 👉 反推主体尺寸
+        // 反推主体尺寸
         float coreWidth = fullRect.width / (1f + outX * JigsawKnobRatio);
         float coreHeight = fullRect.height / (1f + outY * JigsawKnobRatio);
 
-        // 👉 每一侧实际凸起长度
+        // 实际凸起尺寸
         float knobWidth = coreWidth * JigsawKnobRatio;
         float knobHeight = coreHeight * JigsawKnobRatio;
 
-        float cutLeft = (jigsawData.leftEdgeType == JigsawEdgeType.Out) ? knobWidth : 0f;
-        float cutRight = (jigsawData.rightEdgeType == JigsawEdgeType.Out) ? knobWidth : 0f;
-        float cutBottom = (jigsawData.downEdgeType == JigsawEdgeType.Out) ? knobHeight : 0f;
-        float cutTop = (jigsawData.upEdgeType == JigsawEdgeType.Out) ? knobHeight : 0f;
+        float cutLeft = (left == JigsawEdgeType.Out) ? knobWidth : 0f;
+        float cutRight = (right == JigsawEdgeType.Out) ? knobWidth : 0f;
+        float cutBottom = (down == JigsawEdgeType.Out) ? knobHeight : 0f;
+        float cutTop = (up == JigsawEdgeType.Out) ? knobHeight : 0f;
 
         float xMin = fullRect.xMin + cutLeft;
         float xMax = fullRect.xMax - cutRight;
