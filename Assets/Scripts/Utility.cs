@@ -24,6 +24,49 @@ public static class Utility
         return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
     }
     
+    public static Rect GetScreenRect(Renderer renderer, Camera cam)
+    {
+        if (renderer == null || cam == null)
+            return new Rect();
+
+        Bounds bounds = renderer.bounds;
+
+        // 8个角
+        Vector3[] corners = new Vector3[8];
+        corners[0] = new Vector3(bounds.min.x, bounds.min.y, bounds.min.z);
+        corners[1] = new Vector3(bounds.max.x, bounds.min.y, bounds.min.z);
+        corners[2] = new Vector3(bounds.min.x, bounds.max.y, bounds.min.z);
+        corners[3] = new Vector3(bounds.max.x, bounds.max.y, bounds.min.z);
+        corners[4] = new Vector3(bounds.min.x, bounds.min.y, bounds.max.z);
+        corners[5] = new Vector3(bounds.max.x, bounds.min.y, bounds.max.z);
+        corners[6] = new Vector3(bounds.min.x, bounds.max.y, bounds.max.z);
+        corners[7] = new Vector3(bounds.max.x, bounds.max.y, bounds.max.z);
+
+        Vector2 min = new Vector2(float.MaxValue, float.MaxValue);
+        Vector2 max = new Vector2(float.MinValue, float.MinValue);
+
+        bool hasPointInFront = false;
+
+        foreach (var corner in corners)
+        {
+            Vector3 screenPoint = cam.WorldToScreenPoint(corner);
+
+            // 在相机前才算有效
+            if (screenPoint.z < 0)
+                continue;
+
+            hasPointInFront = true;
+
+            min = Vector2.Min(min, screenPoint);
+            max = Vector2.Max(max, screenPoint);
+        }
+
+        if (!hasPointInFront)
+            return new Rect(); // 完全在背面
+
+        return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+    }
+    
     public static bool IsPointerOverCollectiveUI()
     {
         PointerEventData eventData = new PointerEventData(EventSystem.current);

@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class JigsawCollective : MonoBehaviour
 {
-    [SerializeField] private GameObject[] worldObjects;
+    [SerializeField] private Renderer[] worldObjects;
 
     private Camera _mainCamera;
 
@@ -24,14 +24,27 @@ public class JigsawCollective : MonoBehaviour
     private void OnGotCollective(object sender, GameEventArgs e)
     {
         if (e is not CapturedJigsawEventArgs args) return;
-        
-        if (worldObjects.Contains(args.HitGameObject))
+
+        var isHit = false;
+        foreach (var worldObject in worldObjects)
+        {
+            var objectRect = Utility.GetScreenRect(worldObject, _mainCamera);
+            if (objectRect.Contains(args.BBoxCenter))
+            {
+                isHit = true;
+                break;
+            }
+        }
+
+        if (isHit)
         {
             foreach (var worldObject in worldObjects)
             {
-                worldObject.SetActive(false);
-            }
+                worldObject.gameObject.SetActive(false);
+            }   
         }
+    }
+
     public void ResetState()
     {
         foreach (var worldObject in worldObjects)
