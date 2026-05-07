@@ -6,9 +6,12 @@ namespace GameEvent.Args
 
         public override int Id => EventId;
     
-        public static ExitLevelEventArgs Create()
+        public int LevelIndex { get; private set; }
+        
+        public static ExitLevelEventArgs Create(int levelIndex)
         {
             var e = ReferencePool.Acquire<ExitLevelEventArgs>();
+            e.LevelIndex = levelIndex;
             
             return e;
         }

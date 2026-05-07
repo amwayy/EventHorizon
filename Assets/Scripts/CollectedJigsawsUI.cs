@@ -11,7 +11,7 @@ namespace DefaultNamespace
         
         public static CollectedJigsawsUI Instance { get; private set; }
         
-        private HashSet<GameObject> _currentLevelJigsaws = new();
+        private readonly Dictionary<int, List<GameObject>> _jigsawsByLevel = new();
 
         private void Awake()
         {
@@ -45,21 +45,36 @@ namespace DefaultNamespace
             
             var jigsawUI = Utility.GetOrAdd(jigsawUIPrefab, transform);
             jigsawUI.Init(args);
-            _currentLevelJigsaws.Add(jigsawUI.gameObject);
+
+            var currentLevelIndex = LevelManager.Instance.CurrentLevelIndex;
+            if (!_jigsawsByLevel.TryGetValue(currentLevelIndex, out var jigsawGameObjects))
+            {
+                jigsawGameObjects = new List<GameObject>();
+                _jigsawsByLevel.Add(currentLevelIndex, jigsawGameObjects);
+            }
+            jigsawGameObjects.Add(jigsawUI.gameObject);
         }
 
         private void OnExitedLevel(object sender, GameEventArgs e)
         {
-            _currentLevelJigsaws.Clear();
+            if (e is not ExitLevelEventArgs args) return;
+            if (!_jigsawsByLevel.TryGetValue(args.LevelIndex, out var jigsawGameObjects)) return;
+            jigsawGameObjects.RemoveAll(x => !x.activeSelf);
+            if (jigsawGameObjects.Count == 0)
+            {
+                _jigsawsByLevel.Remove(args.LevelIndex);
+            }
         }
 
         private void OnLevelReset(object sender, GameEventArgs e)
         {
-            foreach (var jigsawGameObject in _currentLevelJigsaws)
+            var currentLevelIndex = LevelManager.Instance.CurrentLevelIndex;
+            if (!_jigsawsByLevel.TryGetValue(currentLevelIndex, out var jigsawGameObjects)) return;
+            foreach (var jigsawGameObject in jigsawGameObjects)
             {
                 jigsawGameObject.SetActive(false);
             }
-            _currentLevelJigsaws.Clear();
+            jigsawGameObjects.Clear();
         }
     }
 }
