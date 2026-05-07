@@ -32,5 +32,11 @@ public class JigsawCollective : MonoBehaviour
                 worldObject.SetActive(false);
             }
         }
+    public void ResetState()
+    {
+        foreach (var worldObject in worldObjects)
+        {
+            worldObject.gameObject.SetActive(true);
+        }
     }
 }

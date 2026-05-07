@@ -89,4 +89,22 @@ public class JigsawSlot : MonoBehaviour
         }, 1f, 1f).OnComplete(
             () => gameObject.SetActive(false));
     }
+
+    public void ResetState()
+    {
+        if (_jigsaw)
+        {
+            _rd.GetPropertyBlock(_mpb);
+            _mpb.SetFloat(DissolveStrength, 0f);
+            _rd.SetPropertyBlock(_mpb);
+            
+            _jigsaw.SetActive(false);
+            _jigsaw = null;
+        }
+        
+        _slotImage.enabled = true;
+        textureImage.enabled = true;
+        _isUnlocked = false;
+        _jigsawSO = null;
+    }
 }

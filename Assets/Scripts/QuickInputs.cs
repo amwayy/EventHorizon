@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using GameEvent;
+using GameEvent.Args;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class QuickInputs : MonoBehaviour
@@ -22,7 +24,7 @@ public class QuickInputs : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.R))
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            EventComponent.Instance.Fire(this, LevelResetEventArgs.Create());
         }
         else if (Input.GetKey(KeyCode.Escape))
         {

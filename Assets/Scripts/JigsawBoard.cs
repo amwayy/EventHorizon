@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -196,5 +195,15 @@ public class JigsawBoard : MonoBehaviour
                 slot.Unlock();
             }
         }
+    }
+
+    public void ClearJigsaws()
+    {
+        foreach (var slot in slots)
+        {
+            slot.gameObject.SetActive(true);
+            slot.ResetState();
+        }
+        _onBoardJigsawData.Clear();
     }
 }
