@@ -1,4 +1,3 @@
-using System;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
@@ -13,11 +12,6 @@ public class Level: MonoBehaviour
     public int PrepositiveLevelIndex => prepositiveLevelIndex;
     
     private bool _isActive;
-
-    private void Awake()
-    {
-        if (levelIndex != 0) gameObject.SetActive(false);
-    }
 
     private void Start()
     {

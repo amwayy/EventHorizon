@@ -1,18 +1,24 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
 
+[Serializable]
+public struct JigsawPartsData
+{
+    public string jigsawName;
+    public GameObject[] jigsawParts;
+}
+
 public class JigsawCollective : MonoBehaviour
 {
-    [SerializeField] private Renderer[] worldObjects;
-
-    private Camera _mainCamera;
+    [SerializeField] private GameObject[] worldObjects;
+    [SerializeField] private JigsawPartsData[] jigsawPartsData;
+    [SerializeField] private bool hasMultipleSolutions;
 
     private void Start()
     {
-        _mainCamera = Camera.main;
-        
         EventComponent.Instance.Subscribe(CapturedJigsawEventArgs.EventId, OnGotCollective);
     }
 
@@ -25,23 +31,23 @@ public class JigsawCollective : MonoBehaviour
     {
         if (e is not CapturedJigsawEventArgs args) return;
 
-        var isHit = false;
-        foreach (var worldObject in worldObjects)
+        var jigsawParts = worldObjects;
+        if (hasMultipleSolutions)
         {
-            var objectRect = Utility.GetScreenRect(worldObject, _mainCamera);
-            if (objectRect.Contains(args.BBoxCenter))
-            {
-                isHit = true;
-                break;
-            }
+            var result = Array.Find(
+                jigsawPartsData,
+                data => data.jigsawName == args.JigsawData.jigsawName
+            );
+            if (string.IsNullOrEmpty(result.jigsawName)) return;
+            jigsawParts = result.jigsawParts;
         }
-
-        if (isHit)
+        
+        if (jigsawParts.Contains(args.HitGameObject))
         {
-            foreach (var worldObject in worldObjects)
+            foreach (var worldObject in jigsawParts)
             {
-                worldObject.gameObject.SetActive(false);
-            }   
+                worldObject.SetActive(false);
+            }
         }
     }
 
@@ -49,6 +55,8 @@ public class JigsawCollective : MonoBehaviour
     {
         foreach (var worldObject in worldObjects)
         {
+            // resync animations
+            worldObject.gameObject.SetActive(false);
             worldObject.gameObject.SetActive(true);
         }
     }

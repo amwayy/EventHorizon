@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b066373e0d846c085137293551bf9bb, type: 3}
-  m_Name: JigsawLi
+  m_Name: JigsawL1I
   m_EditorClassIdentifier: 
-  jigsawName: Li
+  jigsawName: 1I
   upEdgeType: 0
   downEdgeType: 0
   leftEdgeType: 2

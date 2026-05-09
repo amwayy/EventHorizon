@@ -10,15 +10,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1076318648344056684, guid: 5ac166e9ae8634a539f10d6f551c05d3, type: 3}
       propertyPath: m_Name
-      value: JigsawLi Variant
+      value: JigsawLiRo
       objectReference: {fileID: 0}
     - target: {fileID: 5374169726067608896, guid: 5ac166e9ae8634a539f10d6f551c05d3, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: -3914258611485244550, guid: 4cbc85b9abb174397a0d07bf42e3d483, type: 3}
+      objectReference: {fileID: 6809789232227574278, guid: ab349b6fb8c6149e7a6ad32fb6ced6f4, type: 3}
     - target: {fileID: 7423841566343299337, guid: 5ac166e9ae8634a539f10d6f551c05d3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.06
+      value: -0.051
       objectReference: {fileID: 0}
     - target: {fileID: 7488371389839575305, guid: 5ac166e9ae8634a539f10d6f551c05d3, type: 3}
       propertyPath: m_LocalPosition.x

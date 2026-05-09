@@ -194,4 +194,16 @@ public static class Utility
 
         return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
     }
+    
+    public static bool IsHitTarget(Camera cam, Vector2 screenPos, GameObject target)
+    {
+        Ray ray = cam.ScreenPointToRay(screenPos);
+
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            return hit.collider.gameObject == target;
+        }
+
+        return false;
+    }
 }

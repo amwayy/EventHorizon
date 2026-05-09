@@ -13,10 +13,11 @@ namespace GameEvent.Args
         public RenderTexture CapturedJigsawRT { get; private set; }
         public Vector2Int BBoxCenter { get; private set; }
         public Color Color { get; private set; }
+        public GameObject HitGameObject { get; private set; }
     
         public static CapturedJigsawEventArgs Create(
             int angle, JigsawSO jigsawData, RenderTexture capturedJigsawRT, 
-            Vector2Int bBoxCenter, Color color)
+            Vector2Int bBoxCenter, Color color, GameObject hitGameObject)
         {
             var e = ReferencePool.Acquire<CapturedJigsawEventArgs>();
             e.Angle = angle;
@@ -24,6 +25,7 @@ namespace GameEvent.Args
             e.CapturedJigsawRT = capturedJigsawRT;
             e.BBoxCenter = bBoxCenter;
             e.Color = color;
+            e.HitGameObject = hitGameObject;
             return e;
         }
     

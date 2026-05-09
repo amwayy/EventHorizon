@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7488371389839575305}
   - component: {fileID: 8577796610281534432}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: JigsawCollective
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   worldObjects:
-  - {fileID: 4429318922222362872}
+  - {fileID: 8615218306844452825}
 --- !u!1 &8615218306844452825
 GameObject:
   m_ObjectHideFlags: 0
@@ -58,9 +58,9 @@ GameObject:
   - component: {fileID: 7423841566343299337}
   - component: {fileID: 5374169726067608896}
   - component: {fileID: 4429318922222362872}
-  - component: {fileID: 4572335390417352953}
-  - component: {fileID: 738985655671348428}
-  m_Layer: 0
+  - component: {fileID: 3187668984221331052}
+  - component: {fileID: 7174853129417916449}
+  m_Layer: 7
   m_Name: Jigsaw
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -113,7 +113,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 26432b61a65bf5945ba2883d25a06473, type: 2}
+  - {fileID: 2100000, guid: c3a8e3c8752b848ffa1972dfa1828121, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -135,7 +135,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!95 &4572335390417352953
+--- !u!95 &3187668984221331052
 Animator:
   serializedVersion: 7
   m_ObjectHideFlags: 0
@@ -157,7 +157,7 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!64 &738985655671348428
+--- !u!64 &7174853129417916449
 MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

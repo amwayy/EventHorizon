@@ -15,3 +15,4 @@ MonoBehaviour:
   allJigsaws:
   - {fileID: 11400000, guid: 6f0427940ac054dfaaf3269ee6954a9f, type: 2}
   - {fileID: 11400000, guid: 22636da9e4ec147ae9885b24cda32539, type: 2}
+  - {fileID: 11400000, guid: 808a544b213da4450aa3b089a9492479, type: 2}
