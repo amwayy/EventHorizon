@@ -30,6 +30,8 @@ public class ScreenshotController : MonoBehaviour
 
     public static ScreenshotController Instance { get; private set; }
     
+    public bool IsInScreenshot { get; private set; }
+    
     private RenderTexture _maskTexture;
     private RenderTexture _screenCapture;
     private readonly RenderTexture[] _seedBuffers = new RenderTexture[2];
@@ -37,7 +39,6 @@ public class ScreenshotController : MonoBehaviour
     private Camera _cam;
     private int _viewportWidth = 1920;
     private int _viewportHeight = 1080;
-    private bool _inScreenshot;
 
     private void Awake()
     {
@@ -99,7 +100,7 @@ public class ScreenshotController : MonoBehaviour
             ToggleScreenshotState();
         }
 
-        if (_inScreenshot)
+        if (IsInScreenshot)
         {
             ClearPreviousOutline();
 
@@ -216,16 +217,16 @@ public class ScreenshotController : MonoBehaviour
 
     public void ToggleScreenshotState()
     {
-        _inScreenshot = !_inScreenshot;
+        IsInScreenshot = !IsInScreenshot;
 
-        if (!_inScreenshot)
+        if (!IsInScreenshot)
         {
             ClearPreviousOutline();
         }
 
-        Time.timeScale = _inScreenshot ? 0.05f : 1f;
+        GameManager.Instance.SetGameSpeed(IsInScreenshot ? Configs.ScreenshotModeGameSpeed : 1f);
         
-        EventComponent.Instance.Fire(this, ScreenshotModeToggleEventArgs.Create(_inScreenshot));
+        EventComponent.Instance.Fire(this, ScreenshotModeToggleEventArgs.Create(IsInScreenshot));
     }
 
     private void ClearPreviousOutline()

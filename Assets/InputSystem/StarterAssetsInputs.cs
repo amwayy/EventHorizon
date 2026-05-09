@@ -28,11 +28,13 @@ namespace StarterAssets
 		private void Start()
 		{
 			EventComponent.Instance.Subscribe(ScreenshotModeToggleEventArgs.EventId, OnScreenshotModeToggled);
+			EventComponent.Instance.Subscribe(ToggleOpenMenuEventArgs.EventId, OnToggleOpenMenu);
 		}
 
 		private void OnDestroy()
 		{
 			EventComponent.Instance.Unsubscribe(ScreenshotModeToggleEventArgs.EventId, OnScreenshotModeToggled);
+			EventComponent.Instance.Unsubscribe(ToggleOpenMenuEventArgs.EventId, OnToggleOpenMenu);
 		}
 
 #if ENABLE_INPUT_SYSTEM
@@ -94,9 +96,10 @@ namespace StarterAssets
 			SetCursorState(cursorLocked);
 		}
 
-		public void SetCursorState(bool newState)
+		public void SetCursorState(bool isLocked)
 		{
-			Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
+			Cursor.lockState = isLocked ? CursorLockMode.Locked : CursorLockMode.None;
+			Cursor.visible = !isLocked;
 		}
 
 		private void OnScreenshotModeToggled(object sender, GameEventArgs e)
@@ -104,17 +107,26 @@ namespace StarterAssets
 			if (e is not ScreenshotModeToggleEventArgs args) return;
 
 			var isInScreenshotMode = args.IsOn;
-			cursorLocked = !isInScreenshotMode;
-			SetCursorState(!isInScreenshotMode);
-			cursorInputForLook = !isInScreenshotMode;
+			ToggleEnableInput(!isInScreenshotMode && !GameManager.Instance.IsInMenu);
+		}
 
-			// Always clear look input when toggling screenshot mode
-			// This prevents accumulated mouse delta from causing camera jumps
+		private void OnToggleOpenMenu(object sender, GameEventArgs e)
+		{
+			if (e is not ToggleOpenMenuEventArgs args) return;
+
+			var isInMenu = args.IsOn;
+			ToggleEnableInput(!isInMenu && !ScreenshotController.Instance.IsInScreenshot);
+		}
+
+		private void ToggleEnableInput(bool isOn)
+		{
+			cursorLocked = isOn;
+			SetCursorState(isOn);
+			cursorInputForLook = isOn;
+
 			look = Vector2.zero;
 
-			// When exiting screenshot mode, ignore the next look input frame
-			// to prevent any accumulated delta from being applied
-			if (!isInScreenshotMode)
+			if (isOn)
 			{
 				_ignoreNextLookInput = true;
 			}

@@ -1,7 +1,6 @@
 ﻿using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class QuickInputs : MonoBehaviour
 {
@@ -22,13 +21,13 @@ public class QuickInputs : MonoBehaviour
     
     private void Update()
     {
-        if (Input.GetKey(KeyCode.R))
+        if (Input.GetKeyDown(KeyCode.R))
         {
             EventComponent.Instance.Fire(this, LevelResetEventArgs.Create());
         }
-        else if (Input.GetKey(KeyCode.Escape))
+        else if (Input.GetKeyDown(KeyCode.Escape))
         {
-            Application.Quit();
+            GameManager.Instance.ToggleOpenMenu();
         }
     }
 }

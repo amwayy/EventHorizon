@@ -111,6 +111,8 @@ namespace StarterAssets
 
 		private void Update()
 		{
+			if (GameManager.Instance.IsInMenu) return;
+			
 			JumpAndGravity();
 			GroundedCheck();
 			Move();
@@ -118,6 +120,8 @@ namespace StarterAssets
 
 		private void LateUpdate()
 		{
+			if (GameManager.Instance.IsInMenu) return;
+			
 			CameraRotation();
 		}
 

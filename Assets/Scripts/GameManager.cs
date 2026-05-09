@@ -1,10 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using GameEvent;
+using GameEvent.Args;
 using UnityEngine;
 
 public class GameManager: MonoBehaviour
 {
+    [SerializeField] private GameObject menu;
+    
     public static GameManager Instance { get; private set; }
+    
+    public bool IsInMenu { get; private set; } 
     
     private readonly Dictionary<SceneType, bool> _levelCompleteState = new ();
 
@@ -46,5 +52,29 @@ public class GameManager: MonoBehaviour
     public int GetCompletedLevelCount()
     {
         return _levelCompleteState.Values.Count(isCompleted => isCompleted);
+    }
+
+    public void ToggleOpenMenu()
+    {
+        IsInMenu = !IsInMenu;
+        menu.SetActive(IsInMenu);
+        SetGameSpeed(IsInMenu ? 0f : 1f);
+        
+        EventComponent.Instance.Fire(this, ToggleOpenMenuEventArgs.Create(IsInMenu));
+    }
+
+    public void SetGameSpeed(float speed)
+    {
+        if (IsInMenu)
+        {
+            Time.timeScale = 0f;
+            return;
+        }
+        if (ScreenshotController.Instance.IsInScreenshot)
+        {
+            Time.timeScale = Configs.ScreenshotModeGameSpeed;
+            return;
+        }
+        Time.timeScale = speed;
     }
 }

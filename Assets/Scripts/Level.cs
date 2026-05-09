@@ -11,7 +11,7 @@ public class Level: MonoBehaviour
     
     public int PrepositiveLevelIndex => prepositiveLevelIndex;
     
-    private bool _isActive;
+    public bool IsActive { get; private set; }
 
     private void Start()
     {
@@ -25,7 +25,7 @@ public class Level: MonoBehaviour
 
     private void OnLevelReset(object sender, GameEventArgs e)
     {
-        if (!_isActive) return;
+        if (!IsActive) return;
         
         ResetLevel();
     }
@@ -34,7 +34,7 @@ public class Level: MonoBehaviour
     {
         if (!other.gameObject.TryGetComponent(out CharacterController _)) return;
         
-        _isActive = true;
+        IsActive = true;
         EventComponent.Instance.Fire(this, EnterLevelEventArgs.Create(levelIndex));
     }
 
@@ -42,7 +42,7 @@ public class Level: MonoBehaviour
     {
         if (!other.gameObject.TryGetComponent(out CharacterController _)) return;
         
-        _isActive = false;
+        IsActive = false;
         EventComponent.Instance.Fire(this, ExitLevelEventArgs.Create(levelIndex));
     }
 
