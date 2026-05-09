@@ -223,7 +223,7 @@ public class ScreenshotController : MonoBehaviour
             ClearPreviousOutline();
         }
 
-        Time.timeScale = _inScreenshot ? 0f : 1f;
+        Time.timeScale = _inScreenshot ? 0.05f : 1f;
         
         EventComponent.Instance.Fire(this, ScreenshotModeToggleEventArgs.Create(_inScreenshot));
     }
