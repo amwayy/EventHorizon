@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 8913850017671328468}
   - component: {fileID: 7020784002501133165}
   - component: {fileID: 2414341189358103006}
-  - component: {fileID: 7400033679426213349}
+  - component: {fileID: 4574309786942604698}
   m_Layer: 5
   m_Name: JigsawSlot
   m_TagString: Untagged
@@ -163,7 +163,7 @@ MonoBehaviour:
   m_EffectColor: {r: 0.4528302, g: 0.4528302, b: 0.4528302, a: 1}
   m_EffectDistance: {x: 0.1, y: -0.1}
   m_UseGraphicAlpha: 1
---- !u!114 &7400033679426213349
+--- !u!114 &4574309786942604698
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -172,11 +172,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 3950514214596795028}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
+  m_Script: {fileID: 11500000, guid: 31a19414c41e5ae4aae2af33fee712f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Padding: {x: 0, y: 0, z: 0, w: 0}
-  m_Softness: {x: 0, y: 0}
+  m_ShowMaskGraphic: 1
 --- !u!1 &8137526761024889614
 GameObject:
   m_ObjectHideFlags: 0
