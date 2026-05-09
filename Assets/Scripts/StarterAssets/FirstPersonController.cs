@@ -191,21 +191,6 @@ namespace StarterAssets
 			{
 				// move
 				inputDirection = transform.right * _input.move.x + transform.forward * _input.move.y;
-
-				// 处理贴墙减速
-				if (Physics.Raycast(
-					    transform.position,
-					    inputDirection,
-					    out RaycastHit hit,
-					    1f,
-					    Physics.DefaultRaycastLayers,
-					    QueryTriggerInteraction.Ignore))
-				{
-					if (Vector3.Dot(hit.normal, inputDirection) < 0)
-					{
-						inputDirection = Vector3.ProjectOnPlane(inputDirection, hit.normal);
-					}
-				}
 			}
 
 			// move the player
