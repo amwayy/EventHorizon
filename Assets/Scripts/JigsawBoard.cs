@@ -207,8 +207,11 @@ public class JigsawBoard : MonoBehaviour
         _onBoardJigsawData.Clear();
     }
     
-    public void ShowSlots(JigsawSlot sender)
+    public void ClearSlot(JigsawSlot sender)
     {
+        var index = System.Array.IndexOf(slots, sender);
+        _onBoardJigsawData.Remove(index);
+        
         foreach (var slot in slots)
         {
             if (slot == sender)  continue;

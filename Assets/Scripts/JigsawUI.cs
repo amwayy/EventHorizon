@@ -42,12 +42,13 @@ public class JigsawUI : MonoBehaviour,
     private JigsawRuntimeData _jigsawData;
     private RenderTexture _renderTexture;
     private int _angle;
+    private bool _hitSlotInFront;
 
     private void Awake()
     {
         _mainCamera = Camera.main;
         
-        _outline = GetComponent<UnityEngine.UI.Outline>();
+        _outline = GetComponent<Outline>();
         _rectTransform = GetComponent<RectTransform>();
         _canvas = GetComponentInParent<Canvas>();
     }
@@ -67,6 +68,7 @@ public class JigsawUI : MonoBehaviour,
         else
         {
             _hoveringSlot = slot;
+            _hitSlotInFront = Vector3.Dot(hit.collider.transform.forward, ray.direction) < 0;
             TryPutOnSlot();
         }
     }
@@ -145,6 +147,7 @@ public class JigsawUI : MonoBehaviour,
         }
         slot.Highlight();
         _hoveringSlot = slot;
+        _hitSlotInFront = Vector3.Dot(hit.collider.transform.forward, ray.direction) < 0;
     }
 
     public void OnEndDrag(PointerEventData eventData)
@@ -176,6 +179,9 @@ public class JigsawUI : MonoBehaviour,
         {
             return false;
         }
+        var angle = _angle + (_hitSlotInFront ? 180 : 0);
+        _jigsawData.RotateAngle = angle;
+        _jigsawData = Rotate(_jigsawData.Source, angle);
         if (!_hoveringSlot.CanPut(_jigsawData))
         {
             return false;

@@ -61,6 +61,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Jigsaw
       objectReference: {fileID: 0}
+    - target: {fileID: 860589195099953793, guid: fa17da91539554202bf81fbd2482fb5d, type: 3}
+      propertyPath: m_Convex
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1622901532515090127, guid: fa17da91539554202bf81fbd2482fb5d, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -101,10 +105,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4258045894394950278, guid: fa17da91539554202bf81fbd2482fb5d, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: -3914258611485244550, guid: 4cbc85b9abb174397a0d07bf42e3d483, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 435753696906991647, guid: fa17da91539554202bf81fbd2482fb5d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7845203619074258774}
   m_SourcePrefab: {fileID: 100100000, guid: fa17da91539554202bf81fbd2482fb5d, type: 3}
 --- !u!4 &7423841566343299337 stripped
 Transform:
@@ -116,3 +127,15 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 435753696906991647, guid: fa17da91539554202bf81fbd2482fb5d, type: 3}
   m_PrefabInstance: {fileID: 8179518555802550214}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7845203619074258774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8615218306844452825}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f26c91623d6467090696c5b45716f79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

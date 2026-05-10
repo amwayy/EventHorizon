@@ -101,7 +101,7 @@ public class JigsawSlot : MonoBehaviour
     public void ClearJigsaw()
     {
         ResetInternal();
-        _board.ShowSlots(this);
+        _board.ClearSlot(this);
     }
 
     private void ResetInternal()
