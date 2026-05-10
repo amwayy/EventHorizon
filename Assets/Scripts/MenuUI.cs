@@ -14,10 +14,16 @@ namespace DefaultNamespace
         [SerializeField] private GameObject worldCube;
         [SerializeField] private Canvas canvas;
 
+        private JigsawCollective _fullJigsawCollective;
+        private JigsawCollective _parallaxJigsawCollective;
+        
         private void Awake()
         {
             backButton.onClick.AddListener(Resume);
             quitButton.onClick.AddListener(Quit);
+            
+            _fullJigsawCollective = jigsaw.GetComponent<JigsawCollective>();
+            _parallaxJigsawCollective = knob.GetComponent<JigsawCollective>();
         }
 
         private void Start()
@@ -50,6 +56,7 @@ namespace DefaultNamespace
             if (isOnUiJigsaw)
             {
                 jigsaw.gameObject.SetActive(false);
+                CollectedJigsawsUI.Instance.AddJigsaw(_fullJigsawCollective);
                 return;
             }
             
@@ -62,6 +69,7 @@ namespace DefaultNamespace
             {
                 knob.gameObject.SetActive(false);
                 worldCube.gameObject.SetActive(false);
+                CollectedJigsawsUI.Instance.AddJigsaw(_parallaxJigsawCollective);
             }
         }
 
@@ -69,6 +77,9 @@ namespace DefaultNamespace
         {
             jigsaw.gameObject.SetActive(true);
             knob.gameObject.SetActive(true);
+            
+            _fullJigsawCollective.ResetState();
+            _parallaxJigsawCollective.ResetState();
         }
     }
 }

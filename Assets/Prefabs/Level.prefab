@@ -243,7 +243,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelIndex: 0
   prepositiveLevelIndex: -1
-  jigsawBoard: {fileID: 2982821715886546761}
+  jigsawBoards:
+  - {fileID: 2982821715886546761}
   jigsawContainer: {fileID: 5040880440473054929}
 --- !u!1 &5237105287230326355
 GameObject:

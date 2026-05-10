@@ -1,3 +1,4 @@
+using DefaultNamespace;
 using DG.Tweening;
 using GameEvent.Args;
 using Riten.Native.Cursors;
@@ -183,7 +184,7 @@ public class JigsawUI : MonoBehaviour,
         var color = rawImage.color;
         _hoveringSlot.PutJigsaw(_jigsawData, color);
         _renderTexture.Release();
-        gameObject.SetActive(false);
+        CollectedJigsawsUI.Instance.PutJigsawOnSlot(this, _hoveringSlot);
         return true;
     }
     

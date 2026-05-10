@@ -206,4 +206,13 @@ public class JigsawBoard : MonoBehaviour
         }
         _onBoardJigsawData.Clear();
     }
+    
+    public void ShowSlots(JigsawSlot sender)
+    {
+        foreach (var slot in slots)
+        {
+            if (slot == sender)  continue;
+            slot.Show();
+        }
+    }
 }

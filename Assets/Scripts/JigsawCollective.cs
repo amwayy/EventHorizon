@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using DefaultNamespace;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
@@ -48,16 +49,22 @@ public class JigsawCollective : MonoBehaviour
             {
                 worldObject.SetActive(false);
             }
+            CollectedJigsawsUI.Instance.AddJigsaw(this);
         }
     }
 
-    public void ResetState()
+    public void ResetState(bool sendNotification = true)
     {
         foreach (var worldObject in worldObjects)
         {
             // resync animations
             worldObject.gameObject.SetActive(false);
             worldObject.gameObject.SetActive(true);
+        }
+
+        if (sendNotification)
+        {
+            CollectedJigsawsUI.Instance.OnResetCollective(this);   
         }
     }
 }

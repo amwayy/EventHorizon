@@ -1,7 +1,9 @@
+using System.Collections;
 using System.Collections.Generic;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace DefaultNamespace
 {
@@ -11,7 +13,10 @@ namespace DefaultNamespace
         
         public static CollectedJigsawsUI Instance { get; private set; }
         
-        private readonly Dictionary<int, List<GameObject>> _jigsawsByLevel = new();
+        private readonly Dictionary<JigsawCollective, JigsawUI> _collectedJigsaws = new();
+        private readonly Dictionary<JigsawSlot, JigsawUI> _putJigsaws = new();
+
+        private JigsawUI _lastJigsawUI;
 
         private void Awake()
         {
@@ -28,53 +33,89 @@ namespace DefaultNamespace
         private void Start()
         {
             EventComponent.Instance.Subscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
-            EventComponent.Instance.Subscribe(ExitLevelEventArgs.EventId, OnExitedLevel);
-            EventComponent.Instance.Subscribe(LevelResetEventArgs.EventId, OnLevelReset);
         }
 
         private void OnDestroy()
         {
             EventComponent.Instance.Unsubscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
-            EventComponent.Instance.Unsubscribe(ExitLevelEventArgs.EventId, OnExitedLevel);
-            EventComponent.Instance.Subscribe(LevelResetEventArgs.EventId, OnLevelReset);
         }
 
         private void OnCapturedJigsaw(object sender, GameEventArgs e)
         {
             if (e is not CapturedJigsawEventArgs args) return;
             
-            var jigsawUI = Utility.GetOrAdd(jigsawUIPrefab, transform);
+            var jigsawUI = Instantiate(jigsawUIPrefab, transform);
             jigsawUI.Init(args);
-
-            var currentLevelIndex = LevelManager.Instance.CurrentLevelIndex;
-            if (!_jigsawsByLevel.TryGetValue(currentLevelIndex, out var jigsawGameObjects))
-            {
-                jigsawGameObjects = new List<GameObject>();
-                _jigsawsByLevel.Add(currentLevelIndex, jigsawGameObjects);
-            }
-            jigsawGameObjects.Add(jigsawUI.gameObject);
+            _lastJigsawUI = jigsawUI;   
         }
 
-        private void OnExitedLevel(object sender, GameEventArgs e)
+        public void AddJigsaw(JigsawCollective collective)
         {
-            if (e is not ExitLevelEventArgs args) return;
-            if (!_jigsawsByLevel.TryGetValue(args.LevelIndex, out var jigsawGameObjects)) return;
-            jigsawGameObjects.RemoveAll(x => !x.activeSelf);
-            if (jigsawGameObjects.Count == 0)
+            StartCoroutine(DelayAddJigsaw(collective));
+        }
+
+        private IEnumerator DelayAddJigsaw(JigsawCollective collective)
+        {
+            yield return null;
+            
+            Assert.IsTrue(_lastJigsawUI);
+            
+            _collectedJigsaws[collective] = _lastJigsawUI;
+            _lastJigsawUI = null;
+        }
+
+        public void PutJigsawOnSlot(JigsawUI jigsawUI, JigsawSlot slot)
+        {
+            jigsawUI.gameObject.SetActive(false);
+            
+            _putJigsaws[slot] = jigsawUI;
+        }
+        
+        public void OnResetCollective(JigsawCollective collective)
+        {
+            if (_collectedJigsaws.TryGetValue(collective, out var jigsawUI))
             {
-                _jigsawsByLevel.Remove(args.LevelIndex);
+                jigsawUI.gameObject.SetActive(false);
+                
+                JigsawSlot targetSlot = null;
+                foreach (var (slot, jigsaw) in _putJigsaws)
+                {
+                    if (jigsaw == jigsawUI)
+                    {
+                        targetSlot = slot;
+                        break;
+                    }
+                }
+                if (targetSlot)
+                {
+                    targetSlot.ClearJigsaw();
+                }
+                
+                _collectedJigsaws.Remove(collective);
             }
         }
 
-        private void OnLevelReset(object sender, GameEventArgs e)
+        public void OnResetSlot(JigsawSlot slot)
         {
-            var currentLevelIndex = LevelManager.Instance.CurrentLevelIndex;
-            if (!_jigsawsByLevel.TryGetValue(currentLevelIndex, out var jigsawGameObjects)) return;
-            foreach (var jigsawGameObject in jigsawGameObjects)
+            if (!_putJigsaws.TryGetValue(slot, out var jigsawUI)) return;
+            
+            jigsawUI.gameObject.SetActive(false);
+            
+            JigsawCollective targetCollective = null;
+            foreach (var (collective, jigsaw) in _collectedJigsaws)
             {
-                jigsawGameObject.SetActive(false);
+                if (jigsaw == jigsawUI)
+                {
+                    targetCollective = collective;
+                    break;
+                }
             }
-            jigsawGameObjects.Clear();
+            if (targetCollective)
+            {
+                targetCollective.gameObject.SetActive(true);
+                targetCollective.ResetState(sendNotification: false);
+            }
+            _putJigsaws.Remove(slot);
         }
     }
 }

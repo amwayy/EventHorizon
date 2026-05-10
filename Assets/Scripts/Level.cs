@@ -6,7 +6,7 @@ public class Level: MonoBehaviour
 {
     [SerializeField] private int levelIndex;
     [SerializeField] private int prepositiveLevelIndex;
-    [SerializeField] private JigsawBoard jigsawBoard;
+    [SerializeField] private JigsawBoard[] jigsawBoards;
     [SerializeField] private Transform jigsawContainer;
     
     public int PrepositiveLevelIndex => prepositiveLevelIndex;
@@ -55,6 +55,10 @@ public class Level: MonoBehaviour
                 jigsawCollective.ResetState();
             }
         }
-        jigsawBoard.ClearJigsaws();
+        
+        foreach (var jigsawBoard in jigsawBoards)
+        {
+            jigsawBoard.ClearJigsaws();   
+        }
     }
 }

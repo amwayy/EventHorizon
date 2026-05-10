@@ -1,4 +1,5 @@
-﻿using DG.Tweening;
+﻿using DefaultNamespace;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -92,19 +93,43 @@ public class JigsawSlot : MonoBehaviour
 
     public void ResetState()
     {
+        ResetInternal();
+        
+        CollectedJigsawsUI.Instance.OnResetSlot(this);
+    }
+
+    public void ClearJigsaw()
+    {
+        ResetInternal();
+        _board.ShowSlots(this);
+    }
+
+    private void ResetInternal()
+    {
+        Show();
+        
+        if (_jigsaw)
+        {
+            _jigsaw.SetActive(false);
+            _jigsaw = null;
+        }
+        
+        _isUnlocked = false;
+        _jigsawSO = null;
+    }
+
+    public void Show()
+    {
+        gameObject.SetActive(true);
+        
         if (_jigsaw)
         {
             _rd.GetPropertyBlock(_mpb);
             _mpb.SetFloat(DissolveStrength, 0f);
             _rd.SetPropertyBlock(_mpb);
-            
-            _jigsaw.SetActive(false);
-            _jigsaw = null;
         }
         
         _slotImage.enabled = true;
         textureImage.enabled = true;
-        _isUnlocked = false;
-        _jigsawSO = null;
     }
 }
