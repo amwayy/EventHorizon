@@ -44,7 +44,8 @@ GameObject:
   - component: {fileID: 5374169726067608896}
   - component: {fileID: 4429318922222362872}
   - component: {fileID: 738985655671348428}
-  m_Layer: 0
+  - component: {fileID: 3059948163463120704}
+  m_Layer: 7
   m_Name: Jigsaw
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -141,3 +142,15 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4306717867485100978, guid: f57529313d2f16f4fb081d3924322f1a, type: 3}
+--- !u!114 &3059948163463120704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8615218306844452825}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a8e29ca29a1476bb6ff0d66d33f9056, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

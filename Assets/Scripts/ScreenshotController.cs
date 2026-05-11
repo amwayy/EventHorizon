@@ -128,6 +128,15 @@ public class ScreenshotController : MonoBehaviour
                     if (!isShapeMatched) continue;
                     
                     ToggleScreenshotState();
+                    
+                    var ray = _cam.ScreenPointToRay(Input.mousePosition);
+                    GameObject hitGameObject = null;
+                    if (Physics.Raycast(ray, out var hit, Mathf.Infinity, 
+                            LayerMask.GetMask("Collective"), QueryTriggerInteraction.Ignore))
+                    { 
+                        hitGameObject = hit.collider.gameObject;
+                        if (hitGameObject.TryGetComponent(out SlotJigsaw _)) return;
+                    }
 
                     // Convert RFloat mask to ARGB32 with transparency
                     var displayRT = new RenderTexture(capturedRegionRT.width, capturedRegionRT.height, 0, RenderTextureFormat.ARGB32);
@@ -144,13 +153,6 @@ public class ScreenshotController : MonoBehaviour
 
                     var bBoxCenter = shapeComparor.GetBBoxCenter();
                     var color = GetColorFromRT(_screenCapture, mousePos);
-                    var ray = _cam.ScreenPointToRay(Input.mousePosition);
-                    GameObject hitGameObject = null;
-                    if (Physics.Raycast(ray, out var hit, Mathf.Infinity, 
-                            LayerMask.GetMask("Collective"), QueryTriggerInteraction.Ignore))
-                    { 
-                        hitGameObject = hit.collider.gameObject;
-                    }
                     EventComponent.Instance.Fire(this,
                         CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color, hitGameObject));
                     break;
