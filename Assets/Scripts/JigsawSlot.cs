@@ -8,7 +8,7 @@ public class JigsawSlot : MonoBehaviour
 {
     [SerializeField] private JigsawDatabase jigsawDatabase;
     [SerializeField] private Transform jigsawContainer;
-    [SerializeField] private Image textureImage;
+    [SerializeField] protected GameObject texture;
     
     private static readonly int DissolveStrength = Shader.PropertyToID("_DissolveStrength");
     private static readonly int Color1 = Shader.PropertyToID("_Color");
@@ -33,19 +33,9 @@ public class JigsawSlot : MonoBehaviour
     public void Unlock()
     {
         _slotImage.enabled = false;
-        textureImage.enabled = false;
+        texture.SetActive(false);
         _isUnlocked = true;
         Dissolve();
-    }
-
-    public void Highlight()
-    {
-        _slotImage.color = Color.gray;
-    }
-
-    public void Unhighlight()
-    {
-        _slotImage.color = Color.black;
     }
 
     public bool CanPut(JigsawRuntimeData jigsawData)
@@ -118,7 +108,7 @@ public class JigsawSlot : MonoBehaviour
         _jigsawSO = null;
     }
 
-    public void Show()
+    public virtual void Show()
     {
         gameObject.SetActive(true);
         
@@ -130,6 +120,6 @@ public class JigsawSlot : MonoBehaviour
         }
         
         _slotImage.enabled = true;
-        textureImage.enabled = true;
+        texture.SetActive(true);
     }
 }

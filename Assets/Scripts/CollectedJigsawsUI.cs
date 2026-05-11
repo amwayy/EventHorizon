@@ -59,6 +59,7 @@ namespace DefaultNamespace
             yield return null;
             
             Assert.IsTrue(_lastJigsawUI);
+            if (!_lastJigsawUI) yield break;
             
             _collectedJigsaws[collective] = _lastJigsawUI;
             _lastJigsawUI = null;

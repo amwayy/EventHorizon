@@ -17,6 +17,11 @@ public class JigsawCollective : MonoBehaviour
     [SerializeField] private GameObject[] worldObjects;
     [SerializeField] private JigsawPartsData[] jigsawPartsData;
     [SerializeField] private bool hasMultipleSolutions;
+    
+    [Header("UI")]
+    [SerializeField] private bool isUI;
+    [SerializeField] private RectTransform[] uiParts;
+    [SerializeField] private Canvas canvas;
 
     private void Start()
     {
@@ -32,6 +37,12 @@ public class JigsawCollective : MonoBehaviour
     {
         if (e is not CapturedJigsawEventArgs args) return;
 
+        if (isUI)
+        {
+            OnCaptureUIJigsaw();
+            return;
+        }
+        
         var jigsawParts = worldObjects;
         if (hasMultipleSolutions)
         {
@@ -50,6 +61,27 @@ public class JigsawCollective : MonoBehaviour
                 worldObject.SetActive(false);
             }
             CollectedJigsawsUI.Instance.AddJigsaw(this);
+        }
+    }
+
+    private void OnCaptureUIJigsaw()
+    {
+        foreach (var uiPart in uiParts)
+        {
+            var isHit = RectTransformUtility.RectangleContainsScreenPoint(
+                uiPart,
+                Input.mousePosition,
+                canvas.worldCamera
+            );
+            if (isHit)
+            {
+                foreach (var part in uiParts)
+                {
+                    part.gameObject.SetActive(false);
+                }
+                CollectedJigsawsUI.Instance.AddJigsaw(this);
+                break;
+            }
         }
     }
 

@@ -135,17 +135,12 @@ public class JigsawUI : MonoBehaviour,
 
         _rectTransform.anchoredPosition = localPoint + _dragOffset;
         
-        if (_hoveringSlot)
-        {
-            _hoveringSlot.Unhighlight();
-        }
         var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
         if (!Physics.Raycast(ray, out var hit) || !hit.collider.TryGetComponent(out JigsawSlot slot))
         {
             _hoveringSlot = null;
             return;
         }
-        slot.Highlight();
         _hoveringSlot = slot;
         _hitSlotInFront = Vector3.Dot(hit.collider.transform.forward, ray.direction) < 0;
     }
@@ -159,7 +154,6 @@ public class JigsawUI : MonoBehaviour,
         if (!TryPutOnSlot())
         {
             _outline.DOColor(Color.red, 0.2f).SetLoops(4, LoopType.Yoyo).SetUpdate(true).SetEase(Ease.Linear);
-            _hoveringSlot.Unhighlight();
         }
         else
         {
