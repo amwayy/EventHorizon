@@ -118,5 +118,16 @@ namespace DefaultNamespace
             }
             _putJigsaws.Remove(slot);
         }
+
+        public void ResetCollection()
+        {
+            foreach (var (collective, jigsawUI) in _collectedJigsaws)
+            {
+                if (!jigsawUI.gameObject.activeSelf) continue;
+                jigsawUI.gameObject.SetActive(false);
+                collective.ResetState(sendNotification: false);
+            }
+            _collectedJigsaws.Clear();
+        }
     }
 }

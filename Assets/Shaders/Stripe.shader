@@ -145,7 +145,6 @@ Shader "Custom/UnlitStripeAdvanced"
             #pragma fragment fragDN
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/NormalBuffer.hlsl"
 
             struct Attributes
             {

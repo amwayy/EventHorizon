@@ -81,11 +81,14 @@ public class JigsawSlot : MonoBehaviour
             () => gameObject.SetActive(false));
     }
 
-    public void ResetState()
+    public void ResetState(bool sendNotification = true)
     {
         ResetInternal();
-        
-        CollectedJigsawsUI.Instance.OnResetSlot(this);
+
+        if (sendNotification)
+        {
+            CollectedJigsawsUI.Instance.OnResetSlot(this);   
+        }
     }
 
     public void ClearJigsaw()
