@@ -27,7 +27,14 @@ public class QuickInputs : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.Escape))
         {
-            GameManager.Instance.ToggleOpenMenu();
+            if (ScreenshotController.Instance.IsInScreenshot)
+            {
+                ScreenshotController.Instance.ToggleScreenshotState();
+            }
+            else
+            {
+                // GameManager.Instance.ToggleOpenMenu();   
+            }
         }
     }
 }
