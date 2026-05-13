@@ -45,19 +45,8 @@ Shader "Hidden/MaskToTransparent"
                 float maskValue = tex2D(_MainTex, i.uv).r;
 
                 // Convert to white foreground with transparent background
-                // Where mask > 0.5: white (1,1,1) with alpha 1
-                // Where mask <= 0.5: transparent (alpha 0)
-                fixed4 col;
-                if (maskValue > 0.5)
-                {
-                    col = fixed4(1, 1, 1, 1); // White with full alpha
-                }
-                else
-                {
-                    col = fixed4(0, 0, 0, 0); // Transparent
-                }
-
-                return col;
+                float alpha = step(0.7, maskValue);
+                return float4(1,1,1, alpha);
             }
             ENDCG
         }
