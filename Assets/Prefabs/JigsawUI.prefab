@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2925993823497387379}
   - component: {fileID: 2450461417921275030}
   - component: {fileID: 893386787515067472}
+  - component: {fileID: 2964293862657647646}
   m_Layer: 5
   m_Name: JigsawUI
   m_TagString: Untagged
@@ -103,3 +104,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   jigsawDatabase: {fileID: 11400000, guid: 32e0a90a7c5744ef4993719b39afa071, type: 2}
   rawImage: {fileID: 2925993823497387379}
+--- !u!114 &2964293862657647646
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7875933715143263972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0ccfe10fb704704b4c8ed8d71e28073, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  alphaThreshold: 0.1

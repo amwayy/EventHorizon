@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom_UnlitStripe_Wall
-  m_Shader: {fileID: 4800000, guid: a0dc7c2860c2047d2815e8982632066c, type: 3}
+  m_Name: Custom_UnlitStripe_MoireWall
+  m_Shader: {fileID: 4800000, guid: bf2427850e2d4a4c85f45a67d719b353, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -25,12 +25,12 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Angle: 24.5
-    - _Density: 0.9
+    - _Angle: 26
+    - _Density: 108.2
     - _Size: 0.081
     - _Width: 0.1
     m_Colors:
     - _ColorA: {r: 1, g: 1, b: 1, a: 1}
-    - _ColorB: {r: 0.95, g: 0.95, b: 0.95, a: 1}
+    - _ColorB: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

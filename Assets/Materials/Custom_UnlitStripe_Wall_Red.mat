@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom_UnlitStripe_Wall
+  m_Name: Custom_UnlitStripe_Wall_Red
   m_Shader: {fileID: 4800000, guid: a0dc7c2860c2047d2815e8982632066c, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -30,7 +30,7 @@ Material:
     - _Size: 0.081
     - _Width: 0.1
     m_Colors:
-    - _ColorA: {r: 1, g: 1, b: 1, a: 1}
-    - _ColorB: {r: 0.95, g: 0.95, b: 0.95, a: 1}
+    - _ColorA: {r: 1, g: 0.34509805, b: 0.32156864, a: 1}
+    - _ColorB: {r: 0.95, g: 0.3278431, b: 0.30549017, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

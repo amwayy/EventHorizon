@@ -60,7 +60,8 @@ public class JigsawUI : MonoBehaviour,
 
     private void Update()
     {
-        var ray = _mainCamera.ScreenPointToRay(_rectTransform.position);
+        var screenPos = _mainCamera.WorldToScreenPoint(_rectTransform.position);
+        var ray = _mainCamera.ScreenPointToRay(screenPos);
         if (!Physics.Raycast(ray, out var hit) || !hit.collider.TryGetComponent(out JigsawSlot slot))
         {
             _hoveringSlot = null;
@@ -116,8 +117,6 @@ public class JigsawUI : MonoBehaviour,
         );
 
         _dragOffset = _rectTransform.anchoredPosition - localPoint;
-        
-        transform.SetAsLastSibling();
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -165,7 +164,7 @@ public class JigsawUI : MonoBehaviour,
     private bool TryPutOnSlot()
     {
         var slotRect = Utility.GetUIRectScreenRect(_hoveringSlot.RectTransform, _mainCamera);
-        var jigsawRect = Utility.GetUIRectScreenRect(RectTransform, null);
+        var jigsawRect = Utility.GetUIRectScreenRect(RectTransform, _mainCamera);
         jigsawRect = Utility.GetJigsawCoreRect(jigsawRect, _jigsawData.Source, _angle);
         var iou = Utility.IoU(slotRect, jigsawRect);
 

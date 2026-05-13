@@ -17,6 +17,7 @@ namespace DefaultNamespace
         private readonly Dictionary<JigsawSlot, JigsawUI> _putJigsaws = new();
 
         private JigsawUI _lastJigsawUI;
+        private Camera _mainCamera;
 
         private void Awake()
         {
@@ -32,6 +33,8 @@ namespace DefaultNamespace
 
         private void Start()
         {
+            _mainCamera = Camera.main;
+            
             EventComponent.Instance.Subscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
         }
 
@@ -44,9 +47,30 @@ namespace DefaultNamespace
         {
             if (e is not CapturedJigsawEventArgs args) return;
             
+            CheckCapturedJigsawOverlappingCollection(args);
+            
             var jigsawUI = Instantiate(jigsawUIPrefab, transform);
             jigsawUI.Init(args);
             _lastJigsawUI = jigsawUI;   
+        }
+
+        private void CheckCapturedJigsawOverlappingCollection(CapturedJigsawEventArgs args)
+        {
+            var captureRect = new Rect(
+                args.BBoxCenter.x - args.CapturedJigsawRT.width * 0.5f,
+                args.BBoxCenter.y - args.CapturedJigsawRT.height * 0.5f,
+                args.CapturedJigsawRT.width,
+                args.CapturedJigsawRT.height
+            );
+            foreach (var (_, jigsawUI) in _collectedJigsaws)
+            {
+                if (!jigsawUI.gameObject.activeSelf) continue;
+                var collectionRect = Utility.GetUIRectScreenRect(jigsawUI.RectTransform, _mainCamera);
+                if (captureRect.Overlaps(collectionRect))
+                {
+                    jigsawUI.gameObject.SetActive(false);
+                }
+            }
         }
 
         public void AddJigsaw(JigsawCollective collective)
