@@ -84,7 +84,6 @@ namespace DefaultNamespace
                 // Check for alpha overlap using IoU
                 const float iouThreshold = 0.1f; // Adjust this threshold as needed
                 var iou = ComputeAlphaIoU(args.CapturedJigsawRT, captureRect, existingRT, collectionRect);
-                Debug.Log("iou: " + iou);
                 if (iou > iouThreshold)
                 {
                     jigsawUI.gameObject.SetActive(false);
