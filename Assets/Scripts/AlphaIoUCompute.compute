@@ -1,0 +1,64 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+Texture2D<float4> Texture1;
+Texture2D<float4> Texture2;
+RWStructuredBuffer<uint> Results; // [0] = intersection, [1] = union
+
+float4 Rect1; // xMin, yMin, width, height
+float4 Rect2; // xMin, yMin, width, height
+float4 UnionRect; // xMin, yMin, width, height
+float2 Texture1Size;
+float2 Texture2Size;
+float AlphaThreshold;
+int SampleStep;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // Calculate world position from thread ID
+    float x = UnionRect.x + id.x * SampleStep;
+    float y = UnionRect.y + id.y * SampleStep;
+
+    // Check if we're outside the union rect
+    if (x >= UnionRect.x + UnionRect.z || y >= UnionRect.y + UnionRect.w)
+        return;
+
+    bool isOpaque1 = false;
+    bool isOpaque2 = false;
+
+    // Check if point is within rect1 and sample
+    if (x >= Rect1.x && x < Rect1.x + Rect1.z && y >= Rect1.y && y < Rect1.y + Rect1.w)
+    {
+        float u1 = (x - Rect1.x) / Rect1.z;
+        float v1 = (y - Rect1.y) / Rect1.w;
+        int texX1 = (int)(u1 * Texture1Size.x);
+        int texY1 = (int)(v1 * Texture1Size.y);
+
+        float4 pixel1 = Texture1[int2(texX1, texY1)];
+        isOpaque1 = pixel1.a >= AlphaThreshold;
+    }
+
+    // Check if point is within rect2 and sample
+    if (x >= Rect2.x && x < Rect2.x + Rect2.z && y >= Rect2.y && y < Rect2.y + Rect2.w)
+    {
+        float u2 = (x - Rect2.x) / Rect2.z;
+        float v2 = (y - Rect2.y) / Rect2.w;
+        int texX2 = (int)(u2 * Texture2Size.x);
+        int texY2 = (int)(v2 * Texture2Size.y);
+
+        float4 pixel2 = Texture2[int2(texX2, texY2)];
+        isOpaque2 = pixel2.a >= AlphaThreshold;
+    }
+
+    // Atomically update intersection and union counts
+    if (isOpaque1 && isOpaque2)
+    {
+        InterlockedAdd(Results[0], 1); // intersection
+        InterlockedAdd(Results[1], 1); // union
+    }
+    else if (isOpaque1 || isOpaque2)
+    {
+        InterlockedAdd(Results[1], 1); // union only
+    }
+}
