@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using GameEvent;
 using GameEvent.Args;
 using LibCSG;
@@ -5,20 +8,28 @@ using UnityEngine;
 
 namespace DefaultNamespace
 {
+    [Serializable]
+    public class CuttableJigsawData
+    {
+        public JigsawSO jigsawData;
+        public JigsawCollective jigsawCollective;
+        public MeshFilter meshFilter;
+    }
+    
     public class CuttableWall : MonoBehaviour
     {
         [SerializeField] private int levelId;
-        [SerializeField] private MeshFilter jigsawMeshFilter;
         [SerializeField] private MeshFilter wallMeshFilter;
         [SerializeField] private MeshFilter resultBufferA;
         [SerializeField] private MeshFilter resultBufferB;
-        [SerializeField] private JigsawCollective jigsawCollective;
+        [SerializeField] private List<CuttableJigsawData> jigsawCollectives;
+        [SerializeField] private float cutScaleFactor = 1f;
         
         private CSGBrush _wallBrush;
         private CSGBrushOperation _csgOp = new();
         private CSGBrush _resultBufferABrush;
         private CSGBrush _resultBufferBBrush;
-        private CSGBrush _jigsawBrush;
+        private readonly Dictionary<string, CSGBrush> _jigsawBrushes = new();
         private int _bufferParity;
         private bool _hasCut;
         private MeshFilter _activeMeshFilter;
@@ -30,6 +41,8 @@ namespace DefaultNamespace
             
             resultBufferA.transform.position = wallMeshFilter.transform.position;
             resultBufferB.transform.position = wallMeshFilter.transform.position;
+            resultBufferA.transform.rotation = wallMeshFilter.transform.rotation;
+            resultBufferB.transform.rotation = wallMeshFilter.transform.rotation;
         }
 
         private void Start()
@@ -38,8 +51,12 @@ namespace DefaultNamespace
             
             _wallBrush = new CSGBrush(wallMeshFilter.gameObject);
             _wallBrush.build_from_mesh(wallMeshFilter.mesh);
-            _jigsawBrush = new CSGBrush(jigsawMeshFilter.gameObject);
-            _jigsawBrush.build_from_mesh(jigsawMeshFilter.mesh);
+            foreach (var jigsawCollectiveData in jigsawCollectives)
+            {
+                var jigsawBrush = new CSGBrush(jigsawCollectiveData.meshFilter.gameObject);
+                jigsawBrush.build_from_mesh(jigsawCollectiveData.meshFilter.mesh);   
+                _jigsawBrushes[jigsawCollectiveData.jigsawData.jigsawName] = jigsawBrush;
+            }
             
             _resultBufferABrush = new CSGBrush(resultBufferA.gameObject);
             _resultBufferBBrush = new CSGBrush(resultBufferB.gameObject);
@@ -58,7 +75,12 @@ namespace DefaultNamespace
 
         private void OnCapturedJigsaw(object sender, GameEventArgs e)
         {
+            if (LevelManager.Instance.CurrentLevelIndex != levelId) return;
             if (e is not CapturedJigsawEventArgs args) return;
+
+            var jigsawCollectiveData = jigsawCollectives.Find(data => data.jigsawData.jigsawName == args.JigsawData.jigsawName);
+            if (jigsawCollectiveData == null) return;
+            var jigsawCollective = jigsawCollectiveData.jigsawCollective;
             
             var ray = _mainCamera.ScreenPointToRay((Vector2)args.BBoxCenter);
             var layerMask = 1 << LayerMask.NameToLayer("Cuttable");
@@ -71,14 +93,16 @@ namespace DefaultNamespace
 
             jigsawCollective.transform.position = hit.point;
             jigsawCollective.transform.localScale = Vector3.one;
-            var jigsawScreenRect = Utility.GetScreenRect(jigsawMeshFilter.GetComponent<Renderer>(), _mainCamera);
+            var jigsawScreenRect = Utility.GetScreenRect(jigsawCollectiveData.meshFilter.GetComponent<Renderer>(), _mainCamera);
             var scaleFactor = (args.CapturedJigsawRT.width / jigsawScreenRect.width + args.CapturedJigsawRT.height /  jigsawScreenRect.height) * 0.5f;
+            scaleFactor *= cutScaleFactor;
             jigsawCollective.transform.localScale = new Vector3(scaleFactor, scaleFactor, 10f);
-            CutJigsawHole();
+            var brush = _jigsawBrushes[jigsawCollectiveData.jigsawData.jigsawName];
+            CutJigsawHole(brush);
             CollectedJigsawsUI.Instance.AddJigsaw(jigsawCollective);
         }
 
-        private void CutJigsawHole()
+        private void CutJigsawHole(CSGBrush jigsawBrush)
         {
             CSGBrush subtractedBrush;
             CSGBrush resultBrush;
@@ -103,7 +127,7 @@ namespace DefaultNamespace
             }
             resultMeshFilter.gameObject.SetActive(true);
             
-            _csgOp.merge_brushes(Operation.OPERATION_SUBTRACTION, subtractedBrush, _jigsawBrush, ref resultBrush);
+            _csgOp.merge_brushes(Operation.OPERATION_SUBTRACTION, subtractedBrush, jigsawBrush, ref resultBrush);
             
             resultMeshFilter.mesh.Clear();
             resultBrush.getMesh(resultMeshFilter.mesh);
@@ -121,7 +145,11 @@ namespace DefaultNamespace
 
         private void ResetState()
         {
-            jigsawCollective.ResetState();
+            foreach (var collectiveData in jigsawCollectives)
+            {
+                collectiveData.jigsawCollective.ResetState();
+                collectiveData.jigsawCollective.gameObject.SetActive(false);
+            }
 
             if (_hasCut)
             {

@@ -131,8 +131,8 @@ public class ScreenshotController : MonoBehaviour
                     
                     var ray = _cam.ScreenPointToRay(Input.mousePosition);
                     GameObject hitGameObject = null;
-                    if (Physics.Raycast(ray, out var hit, Mathf.Infinity, 
-                            LayerMask.GetMask("Collective"), QueryTriggerInteraction.Ignore))
+                    var layerMask = LayerMask.GetMask("Collective") | LayerMask.GetMask("Cuttable");
+                    if (Physics.Raycast(ray, out var hit, Mathf.Infinity, layerMask, QueryTriggerInteraction.Ignore))
                     { 
                         hitGameObject = hit.collider.gameObject;
                         if (hitGameObject.TryGetComponent(out SlotJigsaw _)) return;

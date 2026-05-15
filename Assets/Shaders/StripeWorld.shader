@@ -1,4 +1,4 @@
-Shader "Custom/UnlitStripeWorld"
+Shader "Custom/UnlitStripeWorld_LockedAxis"
 {
     Properties
     {
@@ -8,7 +8,11 @@ Shader "Custom/UnlitStripeWorld"
         _Density ("Stripe Density", Float) = 10
         _Width ("Stripe Width", Range(0.01,0.99)) = 0.5
 
-        _Angle ("Stripe Angle (Degrees)", Range(0,180)) = 45
+        // ✅ 轴向模式
+        [KeywordEnum(X, Y, Z, XZ)] _AxisMode ("Axis Mode", Float) = 3
+
+        // 可选：自定义方向（仅当需要扩展时用）
+        _CustomDir ("Custom Direction", Vector) = (1,0,0,0)
     }
 
     SubShader
@@ -20,9 +24,6 @@ Shader "Custom/UnlitStripeWorld"
             "Queue"="Geometry"
         }
 
-        // =========================
-        // ✅ 主渲染
-        // =========================
         Pass
         {
             Name "Unlit"
@@ -36,13 +37,14 @@ Shader "Custom/UnlitStripeWorld"
             #pragma vertex vert
             #pragma fragment frag
 
+            // 👇 轴向关键字
+            #pragma multi_compile _AXISMODE_X _AXISMODE_Y _AXISMODE_Z _AXISMODE_XZ
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                float2 uv         : TEXCOORD0;
-                float3 normalOS   : NORMAL;
             };
 
             struct Varyings
@@ -55,38 +57,57 @@ Shader "Custom/UnlitStripeWorld"
             float4 _ColorB;
             float _Density;
             float _Width;
-            float _Angle;
+            float4 _CustomDir;
 
             Varyings vert (Attributes v)
             {
                 Varyings o;
                 o.positionHCS = TransformObjectToHClip(v.positionOS.xyz);
-                o.positionWS = TransformObjectToWorld(v.positionOS.xyz);
+                o.positionWS  = TransformObjectToWorld(v.positionOS.xyz);
                 return o;
+            }
+
+            float GetCoord(float3 posWS)
+            {
+                #if defined(_AXISMODE_X)
+                    return posWS.x;
+
+                #elif defined(_AXISMODE_Y)
+                    return posWS.y;
+
+                #elif defined(_AXISMODE_Z)
+                    return posWS.z;
+
+                #elif defined(_AXISMODE_XZ)
+                    // 常用于地面斜条纹
+                    return dot(posWS.xz, float2(0.7071, 0.7071));
+
+                #else
+                    // fallback：自定义方向（世界空间）
+                    float3 dir = normalize(_CustomDir.xyz);
+                    return dot(posWS, dir);
+                #endif
             }
 
             half4 frag (Varyings i) : SV_Target
             {
-                float angle = radians(_Angle);
-                float2 dir = float2(cos(angle), sin(angle));
-
-                float2 coordWS = i.positionWS.xz;
-
-                float coord = dot(coordWS, dir) * _Density;
+                float coord = GetCoord(i.positionWS) * _Density;
 
                 float stripe = frac(coord);
-                float mask = step(stripe, _Width);
+
+                // ✅ 抗锯齿（避免你之前说的“边缘发灰”）
+                float w = fwidth(coord);
+                float mask = smoothstep(_Width - w, _Width + w, stripe);
 
                 float3 col = lerp(_ColorA.rgb, _ColorB.rgb, mask);
 
                 return float4(col, 1);
             }
+
             ENDHLSL
         }
 
-        // =========================
-        // ✅ DepthOnly（遮挡）
-        // =========================
+        // ================= DepthOnly =================
         Pass
         {
             Name "DepthOnly"
@@ -125,9 +146,7 @@ Shader "Custom/UnlitStripeWorld"
             ENDHLSL
         }
 
-        // =========================
-        // ✅ DepthNormals（关键！给 edge detection 用）
-        // =========================
+        // ================= DepthNormals =================
         Pass
         {
             Name "DepthNormals"
@@ -164,8 +183,6 @@ Shader "Custom/UnlitStripeWorld"
             half4 fragDN (Varyings i) : SV_Target
             {
                 float3 normalWS = normalize(i.normalWS);
-
-                // ✅ 写入 URP normal buffer
                 return float4(NormalizeNormalPerPixel(normalWS), 0);
             }
             ENDHLSL
