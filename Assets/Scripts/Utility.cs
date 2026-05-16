@@ -155,7 +155,7 @@ public static class Utility
         // 根据旋转重新映射边
         switch (rotation)
         {
-            case 90:
+            case 270:
                 (left, up, right, down) = (down, left, up, right);
                 break;
 
@@ -164,7 +164,7 @@ public static class Utility
                 (up, down) = (down, up);
                 break;
 
-            case 270:
+            case 90:
                 (left, up, right, down) = (up, right, down, left);
                 break;
         }
@@ -255,10 +255,10 @@ public static class Utility
     {
         return new JigsawRuntimeData
         {
-            UpEdgeType = d.LeftEdgeType,
-            RightEdgeType = d.UpEdgeType,
-            DownEdgeType = d.RightEdgeType,
-            LeftEdgeType = d.DownEdgeType,
+            UpEdgeType = d.RightEdgeType,
+            RightEdgeType = d.DownEdgeType,
+            DownEdgeType = d.LeftEdgeType,
+            LeftEdgeType = d.UpEdgeType,
             Source = d.Source
         };
     }

@@ -109,6 +109,7 @@ public class ShapeComparor : MonoBehaviour
         foreach (var (referenceRT, data) in _normalizedReferenceRTs)
         {
             var similarity = CompareTemplates(rotatedRegion, referenceRT);
+            // Debug.Log($"similarity between {data.jigsawName} (angle {rotateAngle}): {similarity}");
             if (similarity > maxSimilarity)
             {
                 maxSimilarity = similarity;
