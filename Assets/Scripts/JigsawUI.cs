@@ -150,13 +150,13 @@ public class JigsawUI : MonoBehaviour,
     {
         CursorStack.Pop(_closeHandCursorId);
         
-        _isOriginal = true;
-        _isBlocked = false;
+        MarkOriginal(true);
+        MarkBlocked(false);
         CollectedJigsawsUI.Instance.OnEndDragJigsawUI(this);
         var jigsawRect = Utility.GetUIRectScreenRect(_rectTransform, _mainCamera);
         if (Utility.IsNotFullyInsideScreen(jigsawRect))
         {
-            UpdateVisibleArea(isBlocked: false);
+            UpdateVisibleArea();
         }
         if (_isOriginal)
         {
@@ -172,12 +172,24 @@ public class JigsawUI : MonoBehaviour,
         }
     }
 
-    public void UpdateVisibleArea(bool isBlocked)
+    public void MarkBlocked(bool isBlocked)
     {
-        _isBlocked = _isBlocked || isBlocked;
-        
+        _isBlocked = isBlocked;
+        if (isBlocked)
+        {
+            _isOriginal = false;
+        }
+    }
+
+    public void MarkOriginal(bool isOriginal)
+    {
+        _isOriginal = isOriginal;
+    }
+
+    public void UpdateVisibleArea()
+    {
         if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return;
-        _visibleAreaJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(visiblePosition, out var rect, out var rt);
+        _visibleAreaJigsawData = ScreenshotController.Instance.GetUISameColorRegionShape(visiblePosition, out var rect, out var rt);
         _visibleRect = rect;
         
         _visiblePartRt?.Release();
@@ -189,8 +201,6 @@ public class JigsawUI : MonoBehaviour,
         var maskMaterial = new Material(Shader.Find("Hidden/MaskToTransparent"));
         Graphics.Blit(rt, _visiblePartRt, maskMaterial);
         Destroy(maskMaterial);
-        
-        _isOriginal = false;
     }
 
     private bool TryPutOnSlot()
@@ -219,8 +229,9 @@ public class JigsawUI : MonoBehaviour,
     private void OnPutOnSlot(JigsawSlot slot)
     {
         CollectedJigsawsUI.Instance.PutJigsawOnSlot(this, slot);
-        
-        if (_isBlocked)
+
+        var isIndependent = ConnectedJigsaws.Count == 0;
+        if (_isBlocked && !isIndependent)
         {
             DoMask(rawImage.texture as RenderTexture, _visiblePartRt);   
         }

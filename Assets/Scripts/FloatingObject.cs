@@ -30,6 +30,7 @@ namespace DefaultNamespace
 
         private void OnLevelReset(object sender, GameEventArgs e)
         {
+            if (!gameObject.activeSelf) return;
             // resync the animation
             gameObject.SetActive(false);
             gameObject.SetActive(true);

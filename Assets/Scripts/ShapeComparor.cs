@@ -4,7 +4,6 @@ using UnityEngine;
 public class ShapeComparor : MonoBehaviour
 {
     [SerializeField] private JigsawDatabase jigsawDatabase;
-    [SerializeField] [Range(0f, 1f)] private float similarityThreshold = 0.85f;
     [SerializeField] private ComputeShader shapeCompareShader;
 
     private static ShapeComparor _instance;
@@ -288,6 +287,7 @@ public class ShapeComparor : MonoBehaviour
         out JigsawSO jigsawData, out RenderTexture capturedRegionRT, bool releaseRt = true)
     {
         var similarity = CompareShape(regionMask, rotateAngle, out jigsawData, out capturedRegionRT);
+        var similarityThreshold = Configs.GetShapeCompareThreshold(jigsawData.jigsawName);
         var isSimilar = similarity >= similarityThreshold;
         if (!isSimilar && releaseRt) capturedRegionRT?.Release();
         return isSimilar;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
@@ -5,16 +6,20 @@ using UnityEngine;
 public class Level: MonoBehaviour
 {
     [SerializeField] private int levelIndex;
-    [SerializeField] private int prepositiveLevelIndex;
+    [SerializeField] private List<int> adjacentLevelIds;
     [SerializeField] private JigsawBoard[] jigsawBoards;
     [SerializeField] private Transform jigsawContainer;
     
-    public int PrepositiveLevelIndex => prepositiveLevelIndex;
+    public List<int> AdjacentLevelIds => adjacentLevelIds;
+    public int LevelId => levelIndex;
     
     public bool IsActive { get; private set; }
 
     private void Start()
     {
+        adjacentLevelIds.Add(levelIndex - 1);
+        adjacentLevelIds.Add(levelIndex + 1);
+        
         EventComponent.Instance.Subscribe(LevelResetEventArgs.EventId, OnLevelReset);
     }
 

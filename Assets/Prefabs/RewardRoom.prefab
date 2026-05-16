@@ -363,8 +363,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 24.44, y: 3, z: 27.442122}
-  m_Center: {x: -2.916474e-14, y: 0, z: -0.25765276}
+  m_Size: {x: 24.44, y: 3, z: 13.064121}
+  m_Center: {x: 0, y: 0, z: -7.4466534}
 --- !u!114 &7549856901038570046
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -378,9 +378,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   levelIndex: 0
-  prepositiveLevelIndex: -1
-  jigsawBoards:
-  - {fileID: 0}
+  adjacentLevelIds: 
+  jigsawBoards: []
   jigsawContainer: {fileID: 578979907242095333}
 --- !u!1001 &1635749291715895591
 PrefabInstance:
@@ -731,7 +730,7 @@ PrefabInstance:
     - target: {fileID: 4429318922222362872, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 56608e988090d4487998c42920c1d4d0, type: 2}
+      objectReference: {fileID: 2100000, guid: 6d0a3d25b59de48f4b45a7b5abac2adc, type: 2}
     - target: {fileID: 5374169726067608896, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
       propertyPath: m_Mesh
       value: 

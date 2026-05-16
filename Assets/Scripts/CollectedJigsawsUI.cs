@@ -235,6 +235,8 @@ namespace DefaultNamespace
         {
             foreach (var (_, collectedJigsawUI) in _collectedJigsaws)
             {
+                if (!collectedJigsawUI.gameObject.activeSelf) continue;
+                collectedJigsawUI.UpdateVisibleArea();
                 if (collectedJigsawUI == jigsawUI) continue;
 
                 if (collectedJigsawUI.ConnectedJigsaws.Contains(jigsawUI))
@@ -251,8 +253,10 @@ namespace DefaultNamespace
                 
                 if (Utility.IsSameColor(jigsawUI.Color, collectedJigsawUI.Color))
                 {
-                    jigsawUI.UpdateVisibleArea(false);
-                    collectedJigsawUI.UpdateVisibleArea(false);
+                    jigsawUI.MarkBlocked(false);
+                    collectedJigsawUI.MarkBlocked(false);
+                    collectedJigsawUI.MarkOriginal(false);
+                    collectedJigsawUI.MarkOriginal(false);
                     
                     jigsawUI.ConnectedJigsaws.Add(collectedJigsawUI);
                     collectedJigsawUI.ConnectedJigsaws.Add(jigsawUI);
@@ -262,12 +266,12 @@ namespace DefaultNamespace
                     if (jigsawUI.transform.GetSiblingIndex() < collectedJigsawUI.transform.GetSiblingIndex())
                     {
                         // dragging jigsaw is underneath
-                        jigsawUI.UpdateVisibleArea(true);
+                        jigsawUI.MarkBlocked(true);
                     }
                     else
                     {
                         // dragging jigsaw is above
-                        collectedJigsawUI.UpdateVisibleArea(true);
+                        collectedJigsawUI.MarkBlocked(true);
                     }
                 }
             }

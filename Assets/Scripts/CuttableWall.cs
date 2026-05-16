@@ -82,12 +82,13 @@ namespace DefaultNamespace
             if (jigsawCollectiveData == null) return;
             var jigsawCollective = jigsawCollectiveData.jigsawCollective;
             
+            if (args.HitGameObject != _activeMeshFilter.gameObject) return;
+            
             var ray = _mainCamera.ScreenPointToRay((Vector2)args.BBoxCenter);
             var layerMask = 1 << LayerMask.NameToLayer("Cuttable");
             if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, layerMask, QueryTriggerInteraction.Ignore) || 
                 hit.collider.gameObject != _activeMeshFilter.gameObject)
             {
-                if (hit.collider != null) Debug.Log($"missed cut raycast. collider: {hit.collider}");
                 return;
             }
 

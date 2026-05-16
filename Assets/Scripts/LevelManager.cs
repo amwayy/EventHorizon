@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
@@ -10,7 +11,11 @@ public class LevelManager : MonoBehaviour
     
     public static LevelManager Instance;
 
-    public int CurrentLevelIndex { get; private set; } = 0;
+    public int CurrentLevelIndex { get; private set; } = -1;
+
+    private const int HubLevelId = 0;
+    
+    private List<int> _lastAdjacentLevelIds = new ();
 
     private void Awake()
     {
@@ -39,16 +44,24 @@ public class LevelManager : MonoBehaviour
     {
         if (e is not EnterLevelEventArgs args) return;
         
-        CurrentLevelIndex = args.LevelIndex;
+        OnEnterLevel(args.LevelIndex);
+    }
 
+    private void OnEnterLevel(int levelId)
+    {
+        CurrentLevelIndex = levelId;
+
+        var enteredLevel = System.Array.Find(levels, level => level.LevelId == levelId);
+        var adjacentLevels = enteredLevel.AdjacentLevelIds;
         foreach (var level in levels)
         {
-            if (level.PrepositiveLevelIndex == args.LevelIndex)
-            {
-                level.gameObject.SetActive(true);
-                break;
-            } 
+            level.gameObject.SetActive(level == enteredLevel || 
+                                       _lastAdjacentLevelIds.Contains(level.LevelId) || 
+                                       adjacentLevels.Contains(level.LevelId));
         }
+        _lastAdjacentLevelIds.Clear();
+        _lastAdjacentLevelIds.Add(enteredLevel.LevelId);
+        _lastAdjacentLevelIds.AddRange(adjacentLevels);
     }
 
     public void GoBackToHub()
@@ -56,5 +69,7 @@ public class LevelManager : MonoBehaviour
         playerController.enabled = false;
         playerController.transform.position = hubPosition;
         playerController.enabled = true;
+        
+        OnEnterLevel(HubLevelId);
     }
 }

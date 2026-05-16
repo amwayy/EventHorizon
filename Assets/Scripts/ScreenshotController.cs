@@ -93,12 +93,13 @@ public class ScreenshotController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(1))
+        var isInMenu = GameManager.Instance.IsInMenu;
+        if (Input.GetMouseButtonDown(1) && !isInMenu)
         {
             ToggleScreenshotState();
         }
 
-        if (IsInScreenshot)
+        if (IsInScreenshot && !isInMenu)
         {
             ClearPreviousOutline();
             
@@ -115,8 +116,10 @@ public class ScreenshotController : MonoBehaviour
         }
     }
 
-    public JigsawRuntimeData GetSameColorRegionShape(Vector2 position, out Rect rect, out RenderTexture rt)
+    public JigsawRuntimeData GetUISameColorRegionShape(Vector2 position, out Rect rect, out RenderTexture rt)
     {
+        var originalCullingMask = _cam.cullingMask;
+        _cam.cullingMask = 1 << LayerMask.NameToLayer("UI");
         rect = Rect.zero;
         rt = null;
         DoColorFloodFill(position);
@@ -131,9 +134,11 @@ public class ScreenshotController : MonoBehaviour
             rt = capturedRegionRT;
             if (!isShapeMatched) continue;
             ClearPreviousOutline();
+            _cam.cullingMask = originalCullingMask;
             return Utility.Rotate(jigsawData, angle);
         }
         ClearPreviousOutline();
+        _cam.cullingMask = originalCullingMask;
         return new JigsawRuntimeData
         {
             Source = null,
