@@ -252,6 +252,8 @@ public class JigsawUI : MonoBehaviour,
             connectedJigsaw.OnPutOnSlot(_hoveringSlot);
         }
         OnPutOnSlot(_hoveringSlot);
+        
+        AudioManager.Instance.Play(SoundGroup.Put);
     }
 
     public void Hide()

@@ -1,4 +1,5 @@
-﻿using GameEvent;
+﻿using DefaultNamespace;
+using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -161,7 +162,11 @@ public class ScreenshotController : MonoBehaviour
             if (Physics.Raycast(ray, out var hit, Mathf.Infinity, layerMask, QueryTriggerInteraction.Ignore))
             { 
                 hitGameObject = hit.collider.gameObject;
-                if (hitGameObject.TryGetComponent(out SlotJigsaw _)) return;
+                if (hitGameObject.TryGetComponent(out SlotJigsaw _))
+                {
+                    AudioManager.Instance.Play(SoundGroup.Put);
+                    return;
+                }
             }
 
             // Convert RFloat mask to ARGB32 with transparency
@@ -181,6 +186,8 @@ public class ScreenshotController : MonoBehaviour
             var color = GetColorFromRT(_screenCapture, Input.mousePosition);
             EventComponent.Instance.Fire(this,
                 CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color, hitGameObject));
+            
+            AudioManager.Instance.Play(SoundGroup.Capture);
             break;
         }
     }
@@ -262,6 +269,10 @@ public class ScreenshotController : MonoBehaviour
         if (!IsInScreenshot)
         {
             ClearPreviousOutline();
+        }
+        else
+        {
+            AudioManager.Instance.Play(SoundGroup.Screenshot);
         }
 
         GameManager.Instance.SetGameSpeed(IsInScreenshot ? Configs.ScreenshotModeGameSpeed : 1f);

@@ -195,6 +195,7 @@ namespace StarterAssets
 			{
 				// move
 				inputDirection = transform.right * _input.move.x + transform.forward * _input.move.y;
+				AudioManager.Instance.PlayFootstep(_input.sprint);
 			}
 
 			// move the player
