@@ -52,7 +52,7 @@ namespace DefaultNamespace
         {
             if (e is not EnterLevelEventArgs args) return;
 
-            if (args.LevelIndex == Configs.HubLevelId)
+            if (args.LevelIndex == Configs.HubLevelId || args.LevelIndex > 100)
             {
                 backToHubButton.gameObject.SetActive(true);
             }
