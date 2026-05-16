@@ -22,6 +22,7 @@ public class JigsawSlot : MonoBehaviour
     private JigsawSO _jigsawSO;
     private MaterialPropertyBlock _mpb;
     private Renderer _rd;
+    private Tween _dissolveTween;
 
     private void Awake()
     {
@@ -69,7 +70,7 @@ public class JigsawSlot : MonoBehaviour
     private void Dissolve()
     {
         var dissolveStrength = 0f;
-        DOTween.To(() => dissolveStrength, x =>
+        _dissolveTween = DOTween.To(() => dissolveStrength, x =>
         {
             dissolveStrength = x;
 
@@ -99,6 +100,8 @@ public class JigsawSlot : MonoBehaviour
 
     private void ResetInternal()
     {
+        _dissolveTween?.Kill();
+        
         Show();
         
         if (_jigsaw)
