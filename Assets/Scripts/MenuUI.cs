@@ -1,5 +1,3 @@
-using GameEvent;
-using GameEvent.Args;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,31 +7,20 @@ namespace DefaultNamespace
     {
         [SerializeField] private Button backButton;
         [SerializeField] private Button quitButton;
-        [SerializeField] private RectTransform jigsaw;
-        [SerializeField] private RectTransform knob;
-        [SerializeField] private GameObject worldCube;
+        [SerializeField] private Button backToHubButton;
         [SerializeField] private Canvas canvas;
-
-        private JigsawCollective _fullJigsawCollective;
-        private JigsawCollective _parallaxJigsawCollective;
         
         private void Awake()
         {
             backButton.onClick.AddListener(Resume);
             quitButton.onClick.AddListener(Quit);
-            
-            _fullJigsawCollective = jigsaw.GetComponent<JigsawCollective>();
-            _parallaxJigsawCollective = knob.GetComponent<JigsawCollective>();
+            backToHubButton.onClick.AddListener(GoBackToHub);
         }
 
-        private void Start()
+        private void GoBackToHub()
         {
-            EventComponent.Instance.Subscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
-        }
-
-        private void OnDestroy()
-        {
-            EventComponent.Instance.Unsubscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
+            GameManager.Instance.ToggleOpenMenu();
+            LevelManager.Instance.GoBackToHub();
         }
 
         private void Resume()
@@ -44,42 +31,6 @@ namespace DefaultNamespace
         private void Quit()
         {
             Application.Quit();
-        }
-
-        private void OnCapturedJigsaw(object sender, GameEventArgs e)
-        {
-            var isOnUiJigsaw = RectTransformUtility.RectangleContainsScreenPoint(
-                jigsaw,
-                Input.mousePosition,
-                canvas.worldCamera
-            );
-            if (isOnUiJigsaw)
-            {
-                jigsaw.gameObject.SetActive(false);
-                CollectedJigsawsUI.Instance.AddJigsaw(_fullJigsawCollective);
-                return;
-            }
-            
-            var isOnUiKnob = RectTransformUtility.RectangleContainsScreenPoint(
-                knob,
-                Input.mousePosition,
-                canvas.worldCamera
-            );
-            if (isOnUiKnob)
-            {
-                knob.gameObject.SetActive(false);
-                worldCube.gameObject.SetActive(false);
-                CollectedJigsawsUI.Instance.AddJigsaw(_parallaxJigsawCollective);
-            }
-        }
-
-        public void ResetState()
-        {
-            jigsaw.gameObject.SetActive(true);
-            knob.gameObject.SetActive(true);
-            
-            _fullJigsawCollective.ResetState();
-            _parallaxJigsawCollective.ResetState();
         }
     }
 }

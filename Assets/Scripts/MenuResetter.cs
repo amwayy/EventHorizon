@@ -22,7 +22,5 @@ public class MenuResetter : MonoBehaviour
     private void OnLevelReset(object sender, EventArgs e)
     {
         if (!level.IsActive) return;
-        
-        menuUI.ResetState();
     }
 }

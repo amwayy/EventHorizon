@@ -33,7 +33,7 @@ public class QuickInputs : MonoBehaviour
             }
             else
             {
-                // GameManager.Instance.ToggleOpenMenu();   
+                GameManager.Instance.ToggleOpenMenu();   
             }
         }
     }

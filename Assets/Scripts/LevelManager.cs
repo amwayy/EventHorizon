@@ -5,6 +5,8 @@ using UnityEngine;
 public class LevelManager : MonoBehaviour
 {
     [SerializeField] private Level[] levels;
+    [SerializeField] private Vector3 hubPosition;
+    [SerializeField] private CharacterController playerController;
     
     public static LevelManager Instance;
 
@@ -47,5 +49,12 @@ public class LevelManager : MonoBehaviour
                 break;
             } 
         }
+    }
+
+    public void GoBackToHub()
+    {
+        playerController.enabled = false;
+        playerController.transform.position = hubPosition;
+        playerController.enabled = true;
     }
 }
