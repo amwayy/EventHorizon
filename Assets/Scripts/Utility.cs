@@ -67,7 +67,7 @@ public static class Utility
         return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
     }
     
-    public static bool IsPointerOverCollectiveUI()
+    public static JigsawUI GetHoveringJigsawUI()
     {
         PointerEventData eventData = new PointerEventData(EventSystem.current);
         eventData.position = Input.mousePosition;
@@ -77,10 +77,13 @@ public static class Utility
 
         foreach (var r in results)
         {
-            if (r.gameObject.TryGetComponent(out JigsawUI _)) return true;
+            if (r.gameObject.TryGetComponent(out JigsawUI jigsawUI))
+            {
+                return jigsawUI;
+            }
         }
 
-        return false;
+        return null;
     }
     
     private static readonly Dictionary<Texture2D, Sprite> SpriteCache = new();
@@ -205,5 +208,163 @@ public static class Utility
         }
 
         return false;
+    }
+
+    public static bool IsSameColor(Color c1, Color c2, float tolerance = 0.01f)
+    {
+        return Mathf.Abs(c1.r - c2.r) <= tolerance &&
+               Mathf.Abs(c1.g - c2.g) <= tolerance &&
+               Mathf.Abs(c1.b - c2.b) <= tolerance &&
+               Mathf.Abs(c1.a - c2.a) <= tolerance;
+    }
+    
+    public static Rect Union(Rect a, Rect b)
+    {
+        var xMin = Mathf.Min(a.xMin, b.xMin);
+        var yMin = Mathf.Min(a.yMin, b.yMin);
+        var xMax = Mathf.Max(a.xMax, b.xMax);
+        var yMax = Mathf.Max(a.yMax, b.yMax);
+
+        return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+    }
+    
+    public static JigsawRuntimeData Rotate(JigsawSO data, int angle)
+    {
+        int steps = ((angle % 360) + 360) % 360 / 90;
+
+        var result = new JigsawRuntimeData
+        {
+            UpEdgeType = data.upEdgeType,
+            DownEdgeType = data.downEdgeType,
+            LeftEdgeType = data.leftEdgeType,
+            RightEdgeType = data.rightEdgeType,
+            Source = data
+        };
+
+        for (int i = 0; i < steps; i++)
+        {
+            result = Rotate90(result);
+        }
+        
+        result.RotateAngle = angle;
+
+        return result;
+    }
+    
+    private static JigsawRuntimeData Rotate90(JigsawRuntimeData d)
+    {
+        return new JigsawRuntimeData
+        {
+            UpEdgeType = d.LeftEdgeType,
+            RightEdgeType = d.UpEdgeType,
+            DownEdgeType = d.RightEdgeType,
+            LeftEdgeType = d.DownEdgeType,
+            Source = d.Source
+        };
+    }
+    
+    public static List<Rect> Subtract(Rect a, Rect b)
+    {
+        List<Rect> result = new List<Rect>();
+
+        // 求交集
+        if (!a.Overlaps(b))
+        {
+            result.Add(a);
+            return result;
+        }
+
+        Rect intersection = new Rect(
+            Mathf.Max(a.xMin, b.xMin),
+            Mathf.Max(a.yMin, b.yMin),
+            Mathf.Min(a.xMax, b.xMax) - Mathf.Max(a.xMin, b.xMin),
+            Mathf.Min(a.yMax, b.yMax) - Mathf.Max(a.yMin, b.yMin)
+        );
+
+        // 如果完全覆盖
+        if (intersection.width <= 0 || intersection.height <= 0)
+        {
+            result.Add(a);
+            return result;
+        }
+
+        // 上
+        if (intersection.yMax < a.yMax)
+        {
+            result.Add(new Rect(
+                a.xMin,
+                intersection.yMax,
+                a.width,
+                a.yMax - intersection.yMax
+            ));
+        }
+
+        // 下
+        if (intersection.yMin > a.yMin)
+        {
+            result.Add(new Rect(
+                a.xMin,
+                a.yMin,
+                a.width,
+                intersection.yMin - a.yMin
+            ));
+        }
+
+        // 左
+        if (intersection.xMin > a.xMin)
+        {
+            result.Add(new Rect(
+                a.xMin,
+                intersection.yMin,
+                intersection.xMin - a.xMin,
+                intersection.height
+            ));
+        }
+
+        // 右
+        if (intersection.xMax < a.xMax)
+        {
+            result.Add(new Rect(
+                intersection.xMax,
+                intersection.yMin,
+                a.xMax - intersection.xMax,
+                intersection.height
+            ));
+        }
+
+        return result;
+    }
+    
+    public static bool SubtractAndMerge(Rect a, Rect b, out Rect result)
+    {
+        var pieces = Subtract(a, b);
+
+        if (pieces.Count == 0)
+        {
+            result = default;
+            return false;
+        }
+
+        float xMin = float.MaxValue;
+        float yMin = float.MaxValue;
+        float xMax = float.MinValue;
+        float yMax = float.MinValue;
+
+        foreach (var r in pieces)
+        {
+            xMin = Mathf.Min(xMin, r.xMin);
+            yMin = Mathf.Min(yMin, r.yMin);
+            xMax = Mathf.Max(xMax, r.xMax);
+            yMax = Mathf.Max(yMax, r.yMax);
+        }
+
+        result = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+        return true;
+    }
+    
+    public static bool IsNotFullyInsideScreen(Rect rect)
+    {
+        var screen = new Rect(0, 0, Screen.width, Screen.height);
+        return !screen.Contains(rect.min) || !screen.Contains(rect.max);
     }
 }

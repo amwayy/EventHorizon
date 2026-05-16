@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(RawImage))]
@@ -8,6 +10,9 @@ public class RawImageAlphaRaycast : MonoBehaviour, ICanvasRaycastFilter
 
     private RawImage _rawImage;
     private RectTransform _rectTransform;
+    private Texture2D _cachedTexture2D;
+    private RenderTexture _cachedRenderTexture;
+    private Texture2D _renderTextureReadBuffer;
 
     private void Awake()
     {
@@ -15,12 +20,21 @@ public class RawImageAlphaRaycast : MonoBehaviour, ICanvasRaycastFilter
         _rectTransform = GetComponent<RectTransform>();
     }
 
+    private void OnDestroy()
+    {
+        if (_renderTextureReadBuffer != null)
+        {
+            Destroy(_renderTextureReadBuffer);
+            _renderTextureReadBuffer = null;
+        }
+    }
+
     public bool IsRaycastLocationValid(Vector2 screenPoint, Camera eventCamera)
     {
-        if (_rawImage.texture == null)
+        var texture = _rawImage.texture;
+        if (texture == null)
             return true;
 
-        // Convert screen point to local point in RectTransform
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 _rectTransform,
                 screenPoint,
@@ -30,24 +44,16 @@ public class RawImageAlphaRaycast : MonoBehaviour, ICanvasRaycastFilter
             return false;
         }
 
-        // Get the rect of the RawImage
         var rect = _rectTransform.rect;
-
-        // Check if the point is within the rect bounds
         if (!rect.Contains(localPoint))
             return false;
 
-        // Convert local point to UV coordinates (0-1 range)
         var uvRect = _rawImage.uvRect;
         var normalizedX = (localPoint.x - rect.x) / rect.width;
         var normalizedY = (localPoint.y - rect.y) / rect.height;
 
-        // Apply UV rect transformation
         var u = uvRect.x + normalizedX * uvRect.width;
         var v = uvRect.y + normalizedY * uvRect.height;
-
-        // Get texture and read pixel
-        var texture = _rawImage.texture;
 
         if (texture is RenderTexture renderTexture)
         {
@@ -63,39 +69,136 @@ public class RawImageAlphaRaycast : MonoBehaviour, ICanvasRaycastFilter
 
     private bool CheckRenderTextureAlpha(RenderTexture renderTexture, float u, float v)
     {
-        // Create a temporary Texture2D to read the pixel
-        var temp = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        if (_cachedRenderTexture != renderTexture || _renderTextureReadBuffer == null)
+        {
+            _cachedRenderTexture = renderTexture;
+
+            if (_renderTextureReadBuffer != null)
+                Destroy(_renderTextureReadBuffer);
+
+            _renderTextureReadBuffer = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        }
+
         var previous = RenderTexture.active;
         RenderTexture.active = renderTexture;
 
-        var x = Mathf.FloorToInt(u * renderTexture.width);
-        var y = Mathf.FloorToInt(v * renderTexture.height);
+        var x = Mathf.Clamp(Mathf.FloorToInt(u * renderTexture.width), 0, renderTexture.width - 1);
+        var y = Mathf.Clamp(Mathf.FloorToInt(v * renderTexture.height), 0, renderTexture.height - 1);
 
-        temp.ReadPixels(new Rect(x, y, 1, 1), 0, 0);
-        temp.Apply();
-
+        _renderTextureReadBuffer.ReadPixels(new Rect(x, y, 1, 1), 0, 0, false);
         RenderTexture.active = previous;
 
-        var pixel = temp.GetPixel(0, 0);
-        Destroy(temp);
-
+        var pixel = _renderTextureReadBuffer.GetPixel(0, 0);
         return pixel.a >= alphaThreshold;
     }
 
     private bool CheckTexture2DAlpha(Texture2D texture2D, float u, float v)
     {
+        if (_cachedTexture2D != texture2D)
+        {
+            _cachedTexture2D = texture2D;
+        }
+
         try
         {
-            var x = Mathf.FloorToInt(u * texture2D.width);
-            var y = Mathf.FloorToInt(v * texture2D.height);
+            var x = Mathf.Clamp(Mathf.FloorToInt(u * texture2D.width), 0, texture2D.width - 1);
+            var y = Mathf.Clamp(Mathf.FloorToInt(v * texture2D.height), 0, texture2D.height - 1);
 
             var pixel = texture2D.GetPixel(x, y);
             return pixel.a >= alphaThreshold;
         }
         catch
         {
-            // If texture is not readable, allow raycast
             return true;
         }
+    }
+
+    public bool TryGetAnyVisibleScreenPosition(out Vector2 result)
+    {
+        result = Vector2.zero;
+        var texture = _rawImage.texture;
+        if (texture == null)
+            return false;
+
+        var canvas = _rawImage.canvas;
+        if (canvas == null)
+            return false;
+
+        var eventCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+        var rect = _rectTransform.rect;
+        var uvRect = _rawImage.uvRect;
+
+        // Sample in a grid pattern (e.g., 10x10)
+        const int samples = 10;
+        for (int y = 0; y < samples; y++)
+        {
+            for (int x = 0; x < samples; x++)
+            {
+                var normalizedX = (x + 0.5f) / samples;
+                var normalizedY = (y + 0.5f) / samples;
+
+                var localPoint = new Vector2(
+                    rect.x + normalizedX * rect.width,
+                    rect.y + normalizedY * rect.height
+                );
+
+                var worldPoint = _rectTransform.TransformPoint(localPoint);
+                var screenPoint = RectTransformUtility.WorldToScreenPoint(eventCamera, worldPoint);
+
+                // Check if this point is opaque
+                var u = uvRect.x + normalizedX * uvRect.width;
+                var v = uvRect.y + normalizedY * uvRect.height;
+
+                bool isOpaque = false;
+                if (texture is RenderTexture renderTexture)
+                {
+                    isOpaque = CheckRenderTextureAlpha(renderTexture, u, v);
+                }
+                else if (texture is Texture2D texture2D)
+                {
+                    isOpaque = CheckTexture2DAlpha(texture2D, u, v);
+                }
+
+                if (!isOpaque)
+                    continue;
+
+                // Check if blocked by other RawImages
+                if (!IsPointBlocked(screenPoint))
+                {
+                    result = screenPoint;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+    
+    private static readonly List<RaycastResult> _raycastResults = new List<RaycastResult>();
+
+    private bool IsPointBlocked(Vector2 screenPoint)
+    {
+        var canvas = _rawImage.canvas;
+        if (canvas == null)
+            return false;
+
+        var raycaster = canvas.GetComponent<GraphicRaycaster>();
+        if (raycaster == null)
+            return false;
+
+        var eventData = new PointerEventData(EventSystem.current)
+        {
+            position = screenPoint
+        };
+
+        _raycastResults.Clear();
+        raycaster.Raycast(eventData, _raycastResults);
+
+        if (_raycastResults.Count == 0)
+            return false;
+
+        var top = _raycastResults[0].gameObject;
+
+        return top != gameObject;
     }
 }

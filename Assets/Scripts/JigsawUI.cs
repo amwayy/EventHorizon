@@ -1,5 +1,5 @@
+using System.Collections.Generic;
 using DefaultNamespace;
-using DG.Tweening;
 using GameEvent.Args;
 using Riten.Native.Cursors;
 using UnityEngine;
@@ -17,7 +17,6 @@ public struct JigsawRuntimeData
     public JigsawSO Source;
 }
 
-[RequireComponent(typeof(Outline))]
 public class JigsawUI : MonoBehaviour,
     IPointerEnterHandler,
     IPointerExitHandler,
@@ -27,10 +26,12 @@ public class JigsawUI : MonoBehaviour,
 {
     [SerializeField] private JigsawDatabase jigsawDatabase;
     [SerializeField] private RawImage rawImage;
+    [SerializeField] private Material subtractMat;
     
     public RectTransform RectTransform => _rectTransform;
+    public Color Color => rawImage.color;
+    public List<JigsawUI> ConnectedJigsaws { get; private set; } = new();
     
-    private Outline _outline;
     private int _openHandCursorId;
     private int _closeHandCursorId;
     private bool _isHovering;
@@ -39,23 +40,24 @@ public class JigsawUI : MonoBehaviour,
     private Canvas _canvas;
     private Camera _mainCamera;
     private JigsawSlot _hoveringSlot;
-    private JigsawRuntimeData _jigsawData;
+    private JigsawRuntimeData _originalJigsawData;
     private RenderTexture _renderTexture;
     private int _angle;
     private bool _hitSlotInFront;
+    private RawImageAlphaRaycast _rawImageHandler;
+    private JigsawRuntimeData _visibleAreaJigsawData;
+    private Rect _visibleRect;
+    private RenderTexture _visiblePartRt;
+    private bool _isOriginal = true;
+    private bool _isBlocked;
 
     private void Awake()
     {
         _mainCamera = Camera.main;
         
-        _outline = GetComponent<Outline>();
         _rectTransform = GetComponent<RectTransform>();
         _canvas = GetComponentInParent<Canvas>();
-    }
-
-    private void OnEnable()
-    {
-        _outline.enabled = false;
+        _rawImageHandler = rawImage.GetComponent<RawImageAlphaRaycast>();
     }
 
     private void Update()
@@ -82,20 +84,20 @@ public class JigsawUI : MonoBehaviour,
         rawImage.rectTransform.anchoredPosition = args.BBoxCenter;
         rawImage.color = args.Color;
         _angle = args.Angle;
-        _jigsawData = Rotate(args.JigsawData, args.Angle);
+        _originalJigsawData = Utility.Rotate(args.JigsawData, args.Angle);
+        _visibleAreaJigsawData = _originalJigsawData;
+        _visibleRect = Utility.GetUIRectScreenRect(_rectTransform, _mainCamera);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         _isHovering = true;
-        _outline.enabled = true;
         _openHandCursorId = CursorStack.Push(NTCursors.OpenHand);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         _isHovering = false;
-        _outline.enabled = false;
         CursorStack.Pop(_openHandCursorId);
     }
 
@@ -148,24 +150,54 @@ public class JigsawUI : MonoBehaviour,
     {
         CursorStack.Pop(_closeHandCursorId);
         
+        _isOriginal = true;
+        _isBlocked = false;
+        CollectedJigsawsUI.Instance.OnEndDragJigsawUI(this);
+        var jigsawRect = Utility.GetUIRectScreenRect(_rectTransform, _mainCamera);
+        if (Utility.IsNotFullyInsideScreen(jigsawRect))
+        {
+            UpdateVisibleArea(isBlocked: false);
+        }
+        if (_isOriginal)
+        {
+            _visibleRect = jigsawRect;
+            _visibleAreaJigsawData = _originalJigsawData;
+        }
         if (!_hoveringSlot) return;
 
-        if (!TryPutOnSlot())
-        {
-            _outline.DOColor(Color.red, 0.2f).SetLoops(4, LoopType.Yoyo).SetUpdate(true).SetEase(Ease.Linear);
-        }
-        else
+        if (TryPutOnSlot())
         {
             CursorStack.Pop(_openHandCursorId);
             ScreenshotController.Instance.ToggleScreenshotState();
         }
     }
 
+    public void UpdateVisibleArea(bool isBlocked)
+    {
+        _isBlocked = _isBlocked || isBlocked;
+        
+        if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return;
+        _visibleAreaJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(visiblePosition, out var rect, out var rt);
+        _visibleRect = rect;
+        
+        _visiblePartRt?.Release();
+        _visiblePartRt = new RenderTexture(rt.width, rt.height, 0, RenderTextureFormat.ARGB32);
+        _visiblePartRt.enableRandomWrite = true;
+        _visiblePartRt.Create();
+
+        // Use MaskExtract shader to convert: white foreground, transparent background
+        var maskMaterial = new Material(Shader.Find("Hidden/MaskToTransparent"));
+        Graphics.Blit(rt, _visiblePartRt, maskMaterial);
+        Destroy(maskMaterial);
+        
+        _isOriginal = false;
+    }
+
     private bool TryPutOnSlot()
     {
+        if (!_visibleAreaJigsawData.Source) return false;
         var slotRect = Utility.GetUIRectScreenRect(_hoveringSlot.RectTransform, _mainCamera);
-        var jigsawRect = Utility.GetUIRectScreenRect(RectTransform, _mainCamera);
-        jigsawRect = Utility.GetJigsawCoreRect(jigsawRect, _jigsawData.Source, _angle);
+        var jigsawRect = Utility.GetJigsawCoreRect(_visibleRect, _visibleAreaJigsawData.Source, _angle);
         var iou = Utility.IoU(slotRect, jigsawRect);
 
         if (Mathf.Abs(iou - 1) > 0.15f)
@@ -173,52 +205,69 @@ public class JigsawUI : MonoBehaviour,
             return false;
         }
         var angle = _angle + (_hitSlotInFront ? 180 : 0);
-        _jigsawData.RotateAngle = angle;
-        _jigsawData = Rotate(_jigsawData.Source, angle);
-        if (!_hoveringSlot.CanPut(_jigsawData))
+        var putJigsawData = Utility.Rotate(_visibleAreaJigsawData.Source, angle);
+        if (!_hoveringSlot.CanPut(putJigsawData))
         {
             return false;
         }
         
         var color = rawImage.color;
-        _hoveringSlot.PutJigsaw(_jigsawData, color);
-        _renderTexture.Release();
-        CollectedJigsawsUI.Instance.PutJigsawOnSlot(this, _hoveringSlot);
+        PutOnSlot(putJigsawData, color);
         return true;
     }
-    
-    private static JigsawRuntimeData Rotate(JigsawSO data, int angle)
+
+    private void OnPutOnSlot(JigsawSlot slot)
     {
-        int steps = ((angle % 360) + 360) % 360 / 90;
-
-        var result = new JigsawRuntimeData
-        {
-            UpEdgeType = data.upEdgeType,
-            DownEdgeType = data.downEdgeType,
-            LeftEdgeType = data.leftEdgeType,
-            RightEdgeType = data.rightEdgeType,
-            Source = data
-        };
-
-        for (int i = 0; i < steps; i++)
-        {
-            result = Rotate90(result);
-        }
+        CollectedJigsawsUI.Instance.PutJigsawOnSlot(this, slot);
         
-        result.RotateAngle = angle;
+        if (_isBlocked)
+        {
+            DoMask(rawImage.texture as RenderTexture, _visiblePartRt);   
+        }
+        else
+        {
+            Hide();
+        }
+    }
 
-        return result;
+    private void PutOnSlot(JigsawRuntimeData putJigsawData, Color color)
+    {
+        if (!_hoveringSlot) return;
+        
+        _hoveringSlot.PutJigsaw(putJigsawData, color);
+        CollectedJigsawsUI.Instance.PutJigsawOnSlot(this, _hoveringSlot);
+        foreach (var connectedJigsaw in ConnectedJigsaws)
+        {
+            connectedJigsaw.OnPutOnSlot(_hoveringSlot);
+        }
+        OnPutOnSlot(_hoveringSlot);
+    }
+
+    public void Hide()
+    {
+        (rawImage.texture as RenderTexture)?.Release();
+        gameObject.SetActive(false);
+    }
+
+    private void DoMask(RenderTexture rtA, RenderTexture rtB)
+    {
+        var result = new RenderTexture(rtA.width, rtA.height, 0, RenderTextureFormat.ARGB32);
+        result.enableRandomWrite = true;
+        result.Create();
+
+        subtractMat.SetTexture("_MainTex", rtA);
+        subtractMat.SetTexture("_MaskTex", rtB);
+        Graphics.Blit(rtA, result, subtractMat);
+        
+        rtA.Release();
+        rtB.Release();
+
+        rawImage.texture = result;
     }
     
-    private static JigsawRuntimeData Rotate90(JigsawRuntimeData d)
+    private bool TryGetAnyVisibleScreenPosition(out Vector2 result)
     {
-        return new JigsawRuntimeData
-        {
-            UpEdgeType = d.LeftEdgeType,
-            RightEdgeType = d.UpEdgeType,
-            DownEdgeType = d.RightEdgeType,
-            LeftEdgeType = d.DownEdgeType,
-            Source = d.Source
-        };
+        var hasVisiblePoint = _rawImageHandler.TryGetAnyVisibleScreenPosition(out result);
+        return hasVisiblePoint;
     }
 }

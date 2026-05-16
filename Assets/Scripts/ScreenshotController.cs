@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using GameEvent;
+﻿using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 
 public class ScreenshotController : MonoBehaviour
@@ -103,62 +101,97 @@ public class ScreenshotController : MonoBehaviour
         if (IsInScreenshot)
         {
             ClearPreviousOutline();
-
-            if (Utility.IsPointerOverCollectiveUI()) return;
             
-            _cam.targetTexture = _screenCapture;
-            _cam.Render();
-            _cam.targetTexture = null;
-
             Vector2 mousePos = Input.mousePosition;
+            DoColorFloodFill(mousePos);
 
-            FloodFillGPU(mousePos);
-
-            hoverOutlineMaterial.SetTexture(FloodFillMask, _maskTexture);
-            hoverOutlineMaterial.SetVector(FloodFillMaskTexelSize, new Vector4(1.0f / _viewportWidth, 1.0f / _viewportHeight, _viewportWidth, _viewportHeight));
-            hoverOutlineMaterial.SetInt(OutlineWidth, outlineWidth);
-            hoverOutlineMaterial.SetColor(OutlineColor, outlineColor);
-
-            if (Input.GetMouseButtonDown(0) && shapeComparor)
+            if (Input.GetMouseButtonUp(0))
             {
-                for (var angle = 0; angle < 360; angle += 90)
-                {
-                    var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle, 
-                        out var jigsawData, out var capturedRegionRT);
-                    if (!isShapeMatched) continue;
-                    
-                    ToggleScreenshotState();
-                    
-                    var ray = _cam.ScreenPointToRay(Input.mousePosition);
-                    GameObject hitGameObject = null;
-                    var layerMask = LayerMask.GetMask("Collective") | LayerMask.GetMask("Cuttable");
-                    if (Physics.Raycast(ray, out var hit, Mathf.Infinity, layerMask, QueryTriggerInteraction.Ignore))
-                    { 
-                        hitGameObject = hit.collider.gameObject;
-                        if (hitGameObject.TryGetComponent(out SlotJigsaw _)) return;
-                    }
-
-                    // Convert RFloat mask to ARGB32 with transparency
-                    var displayRT = new RenderTexture(capturedRegionRT.width, capturedRegionRT.height, 0, RenderTextureFormat.ARGB32);
-                    displayRT.enableRandomWrite = true;
-                    displayRT.Create();
-
-                    // Use MaskExtract shader to convert: white foreground, transparent background
-                    var maskMaterial = new Material(Shader.Find("Hidden/MaskToTransparent"));
-                    Graphics.Blit(capturedRegionRT, displayRT, maskMaterial);
-                    Destroy(maskMaterial);
-
-                    // Release the original RFloat mask
-                    capturedRegionRT.Release();
-
-                    var bBoxCenter = shapeComparor.GetBBoxCenter();
-                    var color = GetColorFromRT(_screenCapture, mousePos);
-                    EventComponent.Instance.Fire(this,
-                        CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color, hitGameObject));
-                    break;
-                }
+                var hoveringJigsawUI = Utility.GetHoveringJigsawUI();
+                if (hoveringJigsawUI && hoveringJigsawUI.ConnectedJigsaws.Count == 0) return;
+                
+                TryCaptureMouseRegion();
             }
         }
+    }
+
+    public JigsawRuntimeData GetSameColorRegionShape(Vector2 position, out Rect rect, out RenderTexture rt)
+    {
+        rect = Rect.zero;
+        rt = null;
+        DoColorFloodFill(position);
+        for (var angle = 0; angle < 360; angle += 90)
+        {
+            var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle,
+                out var jigsawData, out var capturedRegionRT, releaseRt: false);
+            var bboxCenter = shapeComparor.GetBBoxCenter();
+            rect = new Rect(
+                bboxCenter.x - capturedRegionRT.width / 2f,  bboxCenter.y - capturedRegionRT.height / 2f, 
+                capturedRegionRT.width, capturedRegionRT.height);
+            rt = capturedRegionRT;
+            if (!isShapeMatched) continue;
+            ClearPreviousOutline();
+            return Utility.Rotate(jigsawData, angle);
+        }
+        ClearPreviousOutline();
+        return new JigsawRuntimeData
+        {
+            Source = null,
+        };
+    }
+
+    private void TryCaptureMouseRegion()
+    {
+        for (var angle = 0; angle < 360; angle += 90)
+        {
+            var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle, 
+                out var jigsawData, out var capturedRegionRT);
+            if (!isShapeMatched) continue;
+            
+            ToggleScreenshotState();
+            
+            var ray = _cam.ScreenPointToRay(Input.mousePosition);
+            GameObject hitGameObject = null;
+            var layerMask = LayerMask.GetMask("Collective") | LayerMask.GetMask("Cuttable");
+            if (Physics.Raycast(ray, out var hit, Mathf.Infinity, layerMask, QueryTriggerInteraction.Ignore))
+            { 
+                hitGameObject = hit.collider.gameObject;
+                if (hitGameObject.TryGetComponent(out SlotJigsaw _)) return;
+            }
+
+            // Convert RFloat mask to ARGB32 with transparency
+            var displayRT = new RenderTexture(capturedRegionRT.width, capturedRegionRT.height, 0, RenderTextureFormat.ARGB32);
+            displayRT.enableRandomWrite = true;
+            displayRT.Create();
+
+            // Use MaskExtract shader to convert: white foreground, transparent background
+            var maskMaterial = new Material(Shader.Find("Hidden/MaskToTransparent"));
+            Graphics.Blit(capturedRegionRT, displayRT, maskMaterial);
+            Destroy(maskMaterial);
+
+            // Release the original RFloat mask
+            capturedRegionRT.Release();
+
+            var bBoxCenter = shapeComparor.GetBBoxCenter();
+            var color = GetColorFromRT(_screenCapture, Input.mousePosition);
+            EventComponent.Instance.Fire(this,
+                CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color, hitGameObject));
+            break;
+        }
+    }
+
+    private void DoColorFloodFill(Vector2 position)
+    {
+        _cam.targetTexture = _screenCapture;
+        _cam.Render();
+        _cam.targetTexture = null;
+        
+        FloodFillGPU(position);
+
+        hoverOutlineMaterial.SetTexture(FloodFillMask, _maskTexture);
+        hoverOutlineMaterial.SetVector(FloodFillMaskTexelSize, new Vector4(1.0f / _viewportWidth, 1.0f / _viewportHeight, _viewportWidth, _viewportHeight));
+        hoverOutlineMaterial.SetInt(OutlineWidth, outlineWidth);
+        hoverOutlineMaterial.SetColor(OutlineColor, outlineColor);
     }
     
     private Color GetColorFromRT(RenderTexture rt, Vector2 mousePos)

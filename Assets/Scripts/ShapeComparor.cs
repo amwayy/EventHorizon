@@ -284,11 +284,11 @@ public class ShapeComparor : MonoBehaviour
     }
 
     public bool IsShapeSimilar(RenderTexture regionMask, int rotateAngle, 
-        out JigsawSO jigsawData, out RenderTexture capturedRegionRT)
+        out JigsawSO jigsawData, out RenderTexture capturedRegionRT, bool releaseRt = true)
     {
         var similarity = CompareShape(regionMask, rotateAngle, out jigsawData, out capturedRegionRT);
         var isSimilar = similarity >= similarityThreshold;
-        if (!isSimilar) capturedRegionRT.Release();
+        if (!isSimilar && releaseRt) capturedRegionRT?.Release();
         return isSimilar;
     }
     

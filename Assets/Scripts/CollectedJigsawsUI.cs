@@ -15,7 +15,7 @@ namespace DefaultNamespace
         public static CollectedJigsawsUI Instance { get; private set; }
 
         private readonly Dictionary<JigsawCollective, JigsawUI> _collectedJigsaws = new();
-        private readonly Dictionary<JigsawSlot, JigsawUI> _putJigsaws = new();
+        private readonly Dictionary<JigsawSlot, List<JigsawUI>> _putJigsaws = new();
 
         private JigsawUI _lastJigsawUI;
         private Camera _mainCamera;
@@ -86,7 +86,7 @@ namespace DefaultNamespace
                 var iou = ComputeAlphaIoU(args.CapturedJigsawRT, captureRect, existingRT, collectionRect);
                 if (iou > iouThreshold)
                 {
-                    jigsawUI.gameObject.SetActive(false);
+                    HideJigsaw(jigsawUI);
                 }
             }
         }
@@ -172,21 +172,20 @@ namespace DefaultNamespace
 
         public void PutJigsawOnSlot(JigsawUI jigsawUI, JigsawSlot slot)
         {
-            jigsawUI.gameObject.SetActive(false);
-            
-            _putJigsaws[slot] = jigsawUI;
+            _putJigsaws.TryAdd(slot, new List<JigsawUI>());
+            _putJigsaws[slot].Add(jigsawUI);
         }
         
         public void OnResetCollective(JigsawCollective collective)
         {
             if (_collectedJigsaws.TryGetValue(collective, out var jigsawUI))
             {
-                jigsawUI.gameObject.SetActive(false);
+                HideJigsaw(jigsawUI);
                 
                 JigsawSlot targetSlot = null;
-                foreach (var (slot, jigsaw) in _putJigsaws)
+                foreach (var (slot, jigsaws) in _putJigsaws)
                 {
-                    if (jigsaw == jigsawUI)
+                    if (jigsaws.Contains(jigsawUI))
                     {
                         targetSlot = slot;
                         break;
@@ -203,23 +202,20 @@ namespace DefaultNamespace
 
         public void OnResetSlot(JigsawSlot slot)
         {
-            if (!_putJigsaws.TryGetValue(slot, out var jigsawUI)) return;
+            if (!_putJigsaws.TryGetValue(slot, out var jigsaws)) return;
+
+            foreach (var jigsaw in jigsaws)
+            {
+                HideJigsaw(jigsaw);
+            }
             
-            jigsawUI.gameObject.SetActive(false);
-            
-            JigsawCollective targetCollective = null;
             foreach (var (collective, jigsaw) in _collectedJigsaws)
             {
-                if (jigsaw == jigsawUI)
+                if (jigsaws.Contains(jigsaw))
                 {
-                    targetCollective = collective;
-                    break;
+                    collective.gameObject.SetActive(true);
+                    collective.ResetState(sendNotification: false);
                 }
-            }
-            if (targetCollective)
-            {
-                targetCollective.gameObject.SetActive(true);
-                targetCollective.ResetState(sendNotification: false);
             }
             _putJigsaws.Remove(slot);
         }
@@ -229,10 +225,57 @@ namespace DefaultNamespace
             foreach (var (collective, jigsawUI) in _collectedJigsaws)
             {
                 if (!jigsawUI.gameObject.activeSelf) continue;
-                jigsawUI.gameObject.SetActive(false);
+                HideJigsaw(jigsawUI);
                 collective.ResetState(sendNotification: false);
             }
             _collectedJigsaws.Clear();
+        }
+
+        public void OnEndDragJigsawUI(JigsawUI jigsawUI)
+        {
+            foreach (var (_, collectedJigsawUI) in _collectedJigsaws)
+            {
+                if (collectedJigsawUI == jigsawUI) continue;
+
+                if (collectedJigsawUI.ConnectedJigsaws.Contains(jigsawUI))
+                {
+                    collectedJigsawUI.ConnectedJigsaws.Remove(jigsawUI);
+                }
+                
+                var collectedJigsawRect = Utility.GetUIRectScreenRect(collectedJigsawUI.RectTransform, _mainCamera);
+                var draggingJigsawRect = Utility.GetUIRectScreenRect(jigsawUI.RectTransform, _mainCamera);
+                if (!collectedJigsawRect.Overlaps(draggingJigsawRect))
+                {
+                    continue;
+                }
+                
+                if (Utility.IsSameColor(jigsawUI.Color, collectedJigsawUI.Color))
+                {
+                    jigsawUI.UpdateVisibleArea(false);
+                    collectedJigsawUI.UpdateVisibleArea(false);
+                    
+                    jigsawUI.ConnectedJigsaws.Add(collectedJigsawUI);
+                    collectedJigsawUI.ConnectedJigsaws.Add(jigsawUI);
+                }
+                else
+                {
+                    if (jigsawUI.transform.GetSiblingIndex() < collectedJigsawUI.transform.GetSiblingIndex())
+                    {
+                        // dragging jigsaw is underneath
+                        jigsawUI.UpdateVisibleArea(true);
+                    }
+                    else
+                    {
+                        // dragging jigsaw is above
+                        collectedJigsawUI.UpdateVisibleArea(true);
+                    }
+                }
+            }
+        }
+
+        private void HideJigsaw(JigsawUI jigsawUI)
+        {
+            jigsawUI.Hide();
         }
     }
 }

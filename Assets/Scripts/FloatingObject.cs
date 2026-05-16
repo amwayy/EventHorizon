@@ -11,11 +11,13 @@ namespace DefaultNamespace
         private void Start()
         {
             EventComponent.Instance.Subscribe(ScreenshotModeToggleEventArgs.EventId, OnScreenshotModeToggled);
+            EventComponent.Instance.Subscribe(LevelResetEventArgs.EventId, OnLevelReset);
         }
 
         private void OnDestroy()
         {
             EventComponent.Instance.Unsubscribe(ScreenshotModeToggleEventArgs.EventId, OnScreenshotModeToggled);
+            EventComponent.Instance.Subscribe(LevelResetEventArgs.EventId, OnLevelReset);
         }
 
         private void OnScreenshotModeToggled(object sender, GameEventArgs e)
@@ -24,6 +26,13 @@ namespace DefaultNamespace
             if (e is not ScreenshotModeToggleEventArgs args) return;
 
             animator.enabled = !args.IsOn;
+        }
+
+        private void OnLevelReset(object sender, GameEventArgs e)
+        {
+            // resync the animation
+            gameObject.SetActive(false);
+            gameObject.SetActive(true);
         }
     }
 }
