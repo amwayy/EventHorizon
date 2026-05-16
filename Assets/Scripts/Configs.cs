@@ -1,6 +1,8 @@
 public static class Configs
 {
     public const float ScreenshotModeGameSpeed = 0.05f;
+    
+    public const int HubLevelId = 0;
 
     public static float GetShapeCompareThreshold(string shapeName)
     {

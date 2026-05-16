@@ -12,10 +12,8 @@ public class LevelManager : MonoBehaviour
     public static LevelManager Instance;
 
     public int CurrentLevelIndex { get; private set; } = -1;
-
-    private const int HubLevelId = 0;
     
-    private List<int> _lastAdjacentLevelIds = new ();
+    private readonly List<int> _lastAdjacentLevelIds = new ();
 
     private void Awake()
     {
@@ -70,6 +68,6 @@ public class LevelManager : MonoBehaviour
         playerController.transform.position = hubPosition;
         playerController.enabled = true;
         
-        OnEnterLevel(HubLevelId);
+        OnEnterLevel(Configs.HubLevelId);
     }
 }
