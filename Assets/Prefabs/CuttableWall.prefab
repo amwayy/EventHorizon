@@ -54,7 +54,7 @@ MonoBehaviour:
   resultBufferB: {fileID: 4714572822078454147}
   jigsawCollectives:
   - jigsawData: {fileID: 11400000, guid: 808a544b213da4450aa3b089a9492479, type: 2}
-    jigsawCollective: {fileID: 1286967222033592075}
+    jigsawCollective: {fileID: 5237801167535903252}
     meshFilter: {fileID: 3189304635666485675}
   cutScaleFactor: 1
 --- !u!1 &8139854736124210241
@@ -509,28 +509,51 @@ PrefabInstance:
     - {fileID: 8823133973483578695, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
     - {fileID: 1834127907301933268, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
     - {fileID: 3187668984221331052, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
+    - {fileID: 8577796610281534432, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1076318648344056684, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5237801167535903252}
   m_SourcePrefab: {fileID: 100100000, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
 --- !u!4 &88461576575997410 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7488371389839575305, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
   m_PrefabInstance: {fileID: 7410195239882939627}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1286967222033592075 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8577796610281534432, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
+--- !u!1 &1250076726422453042 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8615218306844452825, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
   m_PrefabInstance: {fileID: 7410195239882939627}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb8a0596cc4549a7be9fe06d05869b07, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!33 &3189304635666485675 stripped
 MeshFilter:
   m_CorrespondingSourceObject: {fileID: 5374169726067608896, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
   m_PrefabInstance: {fileID: 7410195239882939627}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &7510200244511854471 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1076318648344056684, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
+  m_PrefabInstance: {fileID: 7410195239882939627}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5237801167535903252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7510200244511854471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2a36f879f9646339a8af01975be5e83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  worldObjects:
+  - {fileID: 1250076726422453042}
+  jigsawPartsData: []
+  hasMultipleSolutions: 0
+  isUI: 0
+  uiParts: []
+  canvas: {fileID: 0}
+  cuttableWall: {fileID: 2533696235423524255}

@@ -151,7 +151,12 @@ namespace DefaultNamespace
                 collectiveData.jigsawCollective.ResetState();
                 collectiveData.jigsawCollective.gameObject.SetActive(false);
             }
+            
+            ResetStateInternally();
+        }
 
+        public void ResetStateInternally()
+        {
             if (_hasCut)
             {
                 _hasCut = false;

@@ -85,7 +85,7 @@ public class JigsawCollective : MonoBehaviour
         }
     }
 
-    public void ResetState(bool sendNotification = true)
+    public virtual void ResetState(bool sendNotification = true)
     {
         foreach (var worldObject in worldObjects)
         {
