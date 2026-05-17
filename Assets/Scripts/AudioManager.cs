@@ -44,7 +44,7 @@ public class AudioManager : MonoBehaviour
         var groupData = audioGroupDataList.Find(x => x.name == group);
         if (string.IsNullOrEmpty(groupData.name)) return;
         var clip = groupData.clips[Random.Range(0, groupData.clips.Length)];
-        if (clip == null) return;
+        if (!clip) return;
         var timeStampNow = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         if (_lastPlayTimestamp.TryGetValue(groupData.name, out var lastTime) && 
             timeStampNow - lastTime < interval) return;
