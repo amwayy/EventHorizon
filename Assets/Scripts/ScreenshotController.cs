@@ -36,8 +36,8 @@ public class ScreenshotController : MonoBehaviour
     private readonly RenderTexture[] _seedBuffers = new RenderTexture[2];
     private RenderTexture _originalMask;
     private Camera _cam;
-    private int _viewportWidth = 1920;
-    private int _viewportHeight = 1080;
+    private int _viewportWidth = 480;
+    private int _viewportHeight = 270;
 
     private void Awake()
     {
@@ -58,25 +58,36 @@ public class ScreenshotController : MonoBehaviour
     private void Start()
     {
         _cam = Camera.main;
+        
+        OnResolutionChanged();
+    }
+
+    public void OnResolutionChanged()
+    {
         _viewportWidth = Screen.width;
         _viewportHeight = Screen.height;
 
+        _screenCapture?.Release();
         _screenCapture = new RenderTexture(_viewportWidth, _viewportHeight, 24, RenderTextureFormat.ARGB32);
         _screenCapture.enableRandomWrite = true;
         _screenCapture.Create();
 
+        _maskTexture?.Release();
         _maskTexture = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
         _maskTexture.enableRandomWrite = true;
         _maskTexture.Create();
 
+        _seedBuffers[0]?.Release();
         _seedBuffers[0] = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
         _seedBuffers[0].enableRandomWrite = true;
         _seedBuffers[0].Create();
 
+        _seedBuffers[1]?.Release();
         _seedBuffers[1] = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
         _seedBuffers[1].enableRandomWrite = true;
         _seedBuffers[1].Create();
 
+        _originalMask?.Release();
         _originalMask = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
         _originalMask.enableRandomWrite = true;
         _originalMask.Create();
@@ -148,25 +159,41 @@ public class ScreenshotController : MonoBehaviour
 
     private void TryCaptureMouseRegion()
     {
+        var isOnSlot = false;
+        
+        var ray = _cam.ScreenPointToRay(Input.mousePosition);
+        GameObject hitGameObject = null;
+        var layerMask = LayerMask.GetMask("Collective") | LayerMask.GetMask("Cuttable");
+        JigsawSO[] templateJigsawSos = null;
+        if (Physics.Raycast(ray, out var hit, Mathf.Infinity, layerMask, QueryTriggerInteraction.Ignore))
+        { 
+            hitGameObject = hit.collider.gameObject;
+            if (hitGameObject.TryGetComponent(out SlotJigsaw _))
+            {
+                isOnSlot = true;
+            }
+            else
+            {
+                var collective = hitGameObject.GetComponentInParent<JigsawCollective>();
+                if (collective)
+                {
+                    templateJigsawSos = collective.TargetJigsawData;   
+                }
+            }
+        }
+        
         for (var angle = 0; angle < 360; angle += 90)
         {
             var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle, 
-                out var jigsawData, out var capturedRegionRT);
+                out var jigsawData, out var capturedRegionRT, templateSos: templateJigsawSos);
             if (!isShapeMatched) continue;
             
             ToggleScreenshotState();
-            
-            var ray = _cam.ScreenPointToRay(Input.mousePosition);
-            GameObject hitGameObject = null;
-            var layerMask = LayerMask.GetMask("Collective") | LayerMask.GetMask("Cuttable");
-            if (Physics.Raycast(ray, out var hit, Mathf.Infinity, layerMask, QueryTriggerInteraction.Ignore))
-            { 
-                hitGameObject = hit.collider.gameObject;
-                if (hitGameObject.TryGetComponent(out SlotJigsaw _))
-                {
-                    AudioManager.Instance.Play(SoundGroup.Put);
-                    return;
-                }
+
+            if (isOnSlot)
+            {
+                AudioManager.Instance.Play(SoundGroup.Put);
+                return;
             }
 
             // Convert RFloat mask to ARGB32 with transparency

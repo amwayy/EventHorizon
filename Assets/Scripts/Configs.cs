@@ -11,8 +11,9 @@ public static class Configs
         return shapeName switch
         {
             "1I" => 0.75f,
-            "IO" => 0.85f,
-            _ => 0.95f,
+            "I+O" => 0.95f,
+            "I+O_Mirrored" => 0.95f,
+            _ => 0.85f,
         };
     }
 

@@ -17,11 +17,14 @@ public class JigsawCollective : MonoBehaviour
     [SerializeField] private GameObject[] worldObjects;
     [SerializeField] private JigsawPartsData[] jigsawPartsData;
     [SerializeField] private bool hasMultipleSolutions;
+    [SerializeField] private JigsawSO[] targetJigsawData;
     
     [Header("UI")]
     [SerializeField] private bool isUI;
     [SerializeField] private RectTransform[] uiParts;
     [SerializeField] private Canvas canvas;
+    
+    public JigsawSO[] TargetJigsawData => targetJigsawData;
 
     private void Start()
     {

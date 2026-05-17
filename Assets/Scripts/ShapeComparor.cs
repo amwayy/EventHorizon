@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class ShapeComparor : MonoBehaviour
@@ -91,7 +92,7 @@ public class ShapeComparor : MonoBehaviour
     }
 
     private float CompareShape(RenderTexture regionMask, int rotateAngle, 
-        out JigsawSO targetJigsawData, out RenderTexture croppedRT)
+        out JigsawSO targetJigsawData, out RenderTexture croppedRT, JigsawSO[] templateJigsawSos)
     {
         var normalizedRegion = NormalizeRegion(regionMask, 256, 256, out croppedRT);
 
@@ -105,8 +106,13 @@ public class ShapeComparor : MonoBehaviour
 
         var maxSimilarity = 0f;
         targetJigsawData = null;
+
         foreach (var (referenceRT, data) in _normalizedReferenceRTs)
         {
+            if (templateJigsawSos != null && templateJigsawSos.Length > 0 && !templateJigsawSos.Contains(data))
+            {
+                continue;
+            }
             var similarity = CompareTemplates(rotatedRegion, referenceRT);
             // Debug.Log($"similarity between {data.jigsawName} (angle {rotateAngle}): {similarity}");
             if (similarity > maxSimilarity)
@@ -283,10 +289,10 @@ public class ShapeComparor : MonoBehaviour
         return normalized;
     }
 
-    public bool IsShapeSimilar(RenderTexture regionMask, int rotateAngle, 
-        out JigsawSO jigsawData, out RenderTexture capturedRegionRT, bool releaseRt = true)
+    public bool IsShapeSimilar(RenderTexture regionMask, int rotateAngle,
+        out JigsawSO jigsawData, out RenderTexture capturedRegionRT, bool releaseRt = true, JigsawSO[] templateSos = null)
     {
-        var similarity = CompareShape(regionMask, rotateAngle, out jigsawData, out capturedRegionRT);
+        var similarity = CompareShape(regionMask, rotateAngle, out jigsawData, out capturedRegionRT, templateSos);
         var similarityThreshold = Configs.GetShapeCompareThreshold(jigsawData.jigsawName);
         var isSimilar = similarity >= similarityThreshold;
         if (!isSimilar && releaseRt) capturedRegionRT?.Release();
