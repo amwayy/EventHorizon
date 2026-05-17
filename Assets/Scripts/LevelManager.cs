@@ -12,8 +12,6 @@ public class LevelManager : MonoBehaviour
     public static LevelManager Instance;
 
     public int CurrentLevelIndex { get; private set; } = -1;
-    
-    private readonly List<int> _lastAdjacentLevelIds = new ();
 
     private void Awake()
     {
@@ -50,16 +48,27 @@ public class LevelManager : MonoBehaviour
         CurrentLevelIndex = levelId;
 
         var enteredLevel = System.Array.Find(levels, level => level.LevelId == levelId);
-        var adjacentLevels = enteredLevel.AdjacentLevelIds;
+        var adjacentLevelIds = enteredLevel.AdjacentLevelIds;
         foreach (var level in levels)
         {
-            level.gameObject.SetActive(level == enteredLevel || 
-                                       _lastAdjacentLevelIds.Contains(level.LevelId) || 
-                                       adjacentLevels.Contains(level.LevelId));
+            level.gameObject.SetActive(false);
+            if (level == enteredLevel || adjacentLevelIds.Contains(level.LevelId))
+            {
+                level.gameObject.SetActive(true);
+                continue;
+            }
+            foreach (var neighborLevelId in adjacentLevelIds)
+            {
+                var neighborLevel = System.Array.Find(levels, lv => lv.LevelId == neighborLevelId);
+                if (!neighborLevel) continue;
+                if ((neighborLevel.AdjacentLevelIds != null && neighborLevel.AdjacentLevelIds.Contains(level.LevelId)) || 
+                    Mathf.Abs(neighborLevel.LevelId - level.LevelId) <= 1)
+                {
+                    level.gameObject.SetActive(true);
+                    break;
+                }
+            }
         }
-        _lastAdjacentLevelIds.Clear();
-        _lastAdjacentLevelIds.Add(enteredLevel.LevelId);
-        _lastAdjacentLevelIds.AddRange(adjacentLevels);
     }
 
     public void GoBackToHub()
