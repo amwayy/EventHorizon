@@ -55,7 +55,6 @@ public class JigsawSlot : MonoBehaviour
             }
             _jigsaw = Instantiate(jigsawData.Source.prefab, jigsawContainer);
             _jigsaw.transform.localPosition = Vector3.zero;
-            _jigsaw.transform.localRotation = Quaternion.identity;
             _jigsawSO = jigsawData.Source;
             _rd = _jigsaw.GetComponentInChildren<Renderer>();
             

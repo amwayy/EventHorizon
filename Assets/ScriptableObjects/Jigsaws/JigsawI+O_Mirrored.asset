@@ -18,4 +18,4 @@ MonoBehaviour:
   leftEdgeType: 0
   rightEdgeType: 2
   texture: {fileID: 2800000, guid: cec91e1612dd640aa8c1375ff28d8c4e, type: 3}
-  prefab: {fileID: 5670638839947284256, guid: 2835e6063cb2d469e837aa1c15af64be, type: 3}
+  prefab: {fileID: 5670638839947284256, guid: d0c9796e2b5cab344adb77ae5507f80b, type: 3}

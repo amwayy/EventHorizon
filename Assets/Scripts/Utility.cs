@@ -155,8 +155,8 @@ public static class Utility
         // 根据旋转重新映射边
         switch (rotation)
         {
-            case 270:
-                (left, up, right, down) = (down, left, up, right);
+            case 90:
+                (left, up, right, down) = (up, left, down, right);
                 break;
 
             case 180:
@@ -164,8 +164,8 @@ public static class Utility
                 (up, down) = (down, up);
                 break;
 
-            case 90:
-                (left, up, right, down) = (up, right, down, left);
+            case 270:
+                (left, up, right, down) = (down, right, up, left);
                 break;
         }
 
