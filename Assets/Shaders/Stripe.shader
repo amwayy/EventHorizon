@@ -13,9 +13,8 @@ Shader "Custom/UnlitStripeAdvanced"
 
     SubShader
     {
-        Tags 
-        { 
-            "RenderPipeline"="UniversalRenderPipeline" 
+        Tags
+        {
             "RenderType"="Opaque"
             "Queue"="Geometry"
         }
@@ -33,8 +32,12 @@ Shader "Custom/UnlitStripeAdvanced"
             Cull Back
 
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex vert
             #pragma fragment frag
+
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -101,8 +104,11 @@ Shader "Custom/UnlitStripeAdvanced"
             ColorMask 0
 
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex vertDepth
             #pragma fragment fragDepth
+
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -141,8 +147,11 @@ Shader "Custom/UnlitStripeAdvanced"
             ZWrite On
 
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex vertDN
             #pragma fragment fragDN
+
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 

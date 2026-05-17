@@ -1,4 +1,4 @@
-Shader "Custom/UnlitStripeWorld_LockedAxis"
+Shader "Custom/UnlitStripeWorld"
 {
     Properties
     {
@@ -8,18 +8,16 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
         _Density ("Stripe Density", Float) = 10
         _Width ("Stripe Width", Range(0.01,0.99)) = 0.5
 
-        // ✅ 轴向模式
-        [KeywordEnum(X, Y, Z, XZ)] _AxisMode ("Axis Mode", Float) = 3
+        // ✅ 用 int 控制轴向（0=X,1=Y,2=Z,3=XZ）
+        _AxisMode ("Axis Mode", Float) = 3
 
-        // 可选：自定义方向（仅当需要扩展时用）
         _CustomDir ("Custom Direction", Vector) = (1,0,0,0)
     }
 
     SubShader
     {
-        Tags 
-        { 
-            "RenderPipeline"="UniversalRenderPipeline" 
+        Tags
+        {
             "RenderType"="Opaque"
             "Queue"="Geometry"
         }
@@ -34,11 +32,12 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
             Cull Back
 
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex vert
             #pragma fragment frag
 
-            // 👇 轴向关键字
-            #pragma multi_compile _AXISMODE_X _AXISMODE_Y _AXISMODE_Z _AXISMODE_XZ
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -57,6 +56,7 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
             float4 _ColorB;
             float _Density;
             float _Width;
+            float _AxisMode;
             float4 _CustomDir;
 
             Varyings vert (Attributes v)
@@ -69,24 +69,13 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
 
             float GetCoord(float3 posWS)
             {
-                #if defined(_AXISMODE_X)
-                    return posWS.x;
+                if (_AxisMode == 0) return posWS.x;
+                if (_AxisMode == 1) return posWS.y;
+                if (_AxisMode == 2) return posWS.z;
+                if (_AxisMode == 3) return dot(posWS.xz, float2(0.7071, 0.7071));
 
-                #elif defined(_AXISMODE_Y)
-                    return posWS.y;
-
-                #elif defined(_AXISMODE_Z)
-                    return posWS.z;
-
-                #elif defined(_AXISMODE_XZ)
-                    // 常用于地面斜条纹
-                    return dot(posWS.xz, float2(0.7071, 0.7071));
-
-                #else
-                    // fallback：自定义方向（世界空间）
-                    float3 dir = normalize(_CustomDir.xyz);
-                    return dot(posWS, dir);
-                #endif
+                float3 dir = normalize(_CustomDir.xyz);
+                return dot(posWS, dir);
             }
 
             half4 frag (Varyings i) : SV_Target
@@ -95,8 +84,8 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
 
                 float stripe = frac(coord);
 
-                // ✅ 抗锯齿（避免你之前说的“边缘发灰”）
-                float w = fwidth(coord);
+                // ✅ 抗锯齿
+                float w = max(fwidth(coord), 0.001);
                 float mask = smoothstep(_Width - w, _Width + w, stripe);
 
                 float3 col = lerp(_ColorA.rgb, _ColorB.rgb, mask);
@@ -107,7 +96,7 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
             ENDHLSL
         }
 
-        // ================= DepthOnly =================
+        // ===== DepthOnly =====
         Pass
         {
             Name "DepthOnly"
@@ -117,20 +106,16 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
             ColorMask 0
 
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex vertDepth
             #pragma fragment fragDepth
 
+            #pragma multi_compile_instancing
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            struct Attributes
-            {
-                float4 positionOS : POSITION;
-            };
-
-            struct Varyings
-            {
-                float4 positionHCS : SV_POSITION;
-            };
+            struct Attributes { float4 positionOS : POSITION; };
+            struct Varyings { float4 positionHCS : SV_POSITION; };
 
             Varyings vertDepth (Attributes v)
             {
@@ -139,14 +124,12 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
                 return o;
             }
 
-            half4 fragDepth (Varyings i) : SV_Target
-            {
-                return 0;
-            }
+            half4 fragDepth (Varyings i) : SV_Target { return 0; }
+
             ENDHLSL
         }
 
-        // ================= DepthNormals =================
+        // ===== DepthNormals =====
         Pass
         {
             Name "DepthNormals"
@@ -155,8 +138,11 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
             ZWrite On
 
             HLSLPROGRAM
+            #pragma target 3.5
             #pragma vertex vertDN
             #pragma fragment fragDN
+
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -185,6 +171,7 @@ Shader "Custom/UnlitStripeWorld_LockedAxis"
                 float3 normalWS = normalize(i.normalWS);
                 return float4(NormalizeNormalPerPixel(normalWS), 0);
             }
+
             ENDHLSL
         }
     }
