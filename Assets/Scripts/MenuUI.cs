@@ -1,6 +1,3 @@
-using System;
-using GameEvent;
-using GameEvent.Args;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,18 +15,15 @@ namespace DefaultNamespace
             backButton.onClick.AddListener(Resume);
             quitButton.onClick.AddListener(Quit);
             backToHubButton.onClick.AddListener(GoBackToHub);
-            
-            backToHubButton.gameObject.SetActive(false);
         }
 
-        private void Start()
+        private void OnEnable()
         {
-            EventComponent.Instance.Subscribe(EnterLevelEventArgs.EventId, OnEnterLevel);
-        }
+            if (!LevelManager.Instance) return;
 
-        private void OnDestroy()
-        {
-            EventComponent.Instance.Unsubscribe(EnterLevelEventArgs.EventId, OnEnterLevel);
+            var currentLevelId = LevelManager.Instance.CurrentLevelIndex;
+            var showBackToHub = currentLevelId == Configs.HubLevelId || currentLevelId >= Configs.CanBackToHubLevelIdMin;
+            backToHubButton.gameObject.SetActive(showBackToHub);
         }
 
         private void GoBackToHub()
@@ -46,16 +40,6 @@ namespace DefaultNamespace
         private void Quit()
         {
             Application.Quit();
-        }
-
-        private void OnEnterLevel(object sender, EventArgs e)
-        {
-            if (e is not EnterLevelEventArgs args) return;
-
-            if (args.LevelIndex == Configs.HubLevelId || args.LevelIndex > 100)
-            {
-                backToHubButton.gameObject.SetActive(true);
-            }
         }
     }
 }
