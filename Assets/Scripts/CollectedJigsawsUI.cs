@@ -228,7 +228,11 @@ namespace DefaultNamespace
                 HideJigsaw(jigsawUI);
                 collective.ResetState(sendNotification: false);
             }
-            _collectedJigsaws.Clear();
+
+            foreach (Transform jigsaw in transform)
+            {
+                jigsaw.gameObject.SetActive(false);
+            }
         }
 
         public void OnEndDragJigsawUI(JigsawUI jigsawUI)
