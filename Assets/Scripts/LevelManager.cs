@@ -51,7 +51,7 @@ public class LevelManager : MonoBehaviour
         var adjacentLevelIds = enteredLevel.AdjacentLevelIds;
         foreach (var level in levels)
         {
-            level.gameObject.SetActive(false);
+            var show = false;
             if (level == enteredLevel || adjacentLevelIds.Contains(level.LevelId))
             {
                 level.gameObject.SetActive(true);
@@ -64,10 +64,11 @@ public class LevelManager : MonoBehaviour
                 if ((neighborLevel.AdjacentLevelIds != null && neighborLevel.AdjacentLevelIds.Contains(level.LevelId)) || 
                     Mathf.Abs(neighborLevel.LevelId - level.LevelId) <= 1)
                 {
-                    level.gameObject.SetActive(true);
+                    show = true;
                     break;
                 }
             }
+            level.gameObject.SetActive(show);
         }
     }
 
