@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
@@ -175,6 +176,29 @@ namespace DefaultNamespace
             _putJigsaws.TryAdd(slot, new List<JigsawUI>());
             _putJigsaws[slot].Add(jigsawUI);
         }
+
+        public List<JigsawCollective> GetSlotCollective(JigsawSlot slot)
+        {
+            List<JigsawUI> targetJigsawUIs = null;
+            foreach (var (putSlot, jigsawUI) in _putJigsaws)
+            {
+                if (putSlot == slot)
+                {
+                    targetJigsawUIs = jigsawUI;
+                    break;
+                }
+            }
+            if (targetJigsawUIs == null || targetJigsawUIs.Count == 0) return null;
+            List<JigsawCollective> targetCollectives = new();
+            foreach (var (collective, collectedJigsawUI) in _collectedJigsaws)
+            {
+                if (targetJigsawUIs.Contains(collectedJigsawUI))
+                {
+                    targetCollectives.Add(collective);
+                }
+            }
+            return targetCollectives;
+        }
         
         public void OnResetCollective(JigsawCollective collective)
         {
@@ -182,21 +206,23 @@ namespace DefaultNamespace
             {
                 HideJigsaw(jigsawUI);
                 
-                JigsawSlot targetSlot = null;
-                foreach (var (slot, jigsaws) in _putJigsaws)
-                {
-                    if (jigsaws.Contains(jigsawUI))
-                    {
-                        targetSlot = slot;
-                        break;
-                    }
-                }
-                if (targetSlot)
-                {
-                    targetSlot.ClearJigsaw();
-                }
-                
                 _collectedJigsaws.Remove(collective);
+            }
+            
+            var putJigsawsData = 
+                DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
+            foreach (var (slotIndex, data) in putJigsawsData)
+            {
+                if (data.CollectiveIndexes.Contains((collective.LevelId, collective.CollectiveIndex)))
+                {
+                    LevelManager.Instance.ResetLevelSlot(slotIndex.Item1, slotIndex.Item2);
+                    foreach (var collectiveIndex in data.CollectiveIndexes)
+                    {
+                        if (collectiveIndex == (collective.LevelId, collective.CollectiveIndex)) continue;
+                        LevelManager.Instance.ResetLevelCollective(collectiveIndex.Item1, collectiveIndex.Item2, false);
+                    }
+                    break;
+                }
             }
         }
 
@@ -209,15 +235,21 @@ namespace DefaultNamespace
                 HideJigsaw(jigsaw);
             }
             
-            foreach (var (collective, jigsaw) in _collectedJigsaws)
+            _putJigsaws.Remove(slot);
+            
+            var putJigsawsData = 
+                DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
+            foreach (var (slotIndex, data) in putJigsawsData)
             {
-                if (jigsaws.Contains(jigsaw))
+                if (slotIndex == (slot.LevelId, slot.Index))
                 {
-                    collective.gameObject.SetActive(true);
-                    collective.ResetState(sendNotification: false);
+                    foreach (var collectiveIndex in data.CollectiveIndexes)
+                    {
+                        LevelManager.Instance.ResetLevelCollective(collectiveIndex.Item1, collectiveIndex.Item2);
+                    }
+                    break;
                 }
             }
-            _putJigsaws.Remove(slot);
         }
 
         public void ResetCollection()

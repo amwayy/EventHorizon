@@ -8,6 +8,8 @@ public static class Configs
     
     public const int CanBackToHubLevelIdMin = 200;
 
+    public const int InitialLevelId = 101;
+
     public static float GetShapeCompareThreshold(string shapeName)
     {
         return shapeName switch

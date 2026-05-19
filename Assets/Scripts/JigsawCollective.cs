@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DefaultNamespace;
 using GameEvent;
@@ -25,6 +26,9 @@ public class JigsawCollective : MonoBehaviour
     [SerializeField] private Canvas canvas;
     
     public JigsawSO[] TargetJigsawData => targetJigsawData;
+    
+    public int LevelId { get; private set; }
+    public int CollectiveIndex { get; private set; }
 
     private void Start()
     {
@@ -34,6 +38,31 @@ public class JigsawCollective : MonoBehaviour
     private void OnDestroy()
     {
         EventComponent.Instance.Unsubscribe(CapturedJigsawEventArgs.EventId, OnGotCollective);
+    }
+
+    public void Init(int levelId, int collectiveIndex)
+    {
+        LevelId = levelId;
+        CollectiveIndex = collectiveIndex;
+        
+        var putJigsaws = 
+            DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
+        foreach (var (_, slotJigsawData) in putJigsaws)
+        {
+            if (slotJigsawData.CollectiveIndexes.Contains((LevelId, CollectiveIndex)))
+            {
+                Hide();
+                break;
+            }
+        }
+    }
+
+    private void Hide()
+    {
+        foreach (var worldObject in worldObjects)
+        {
+            worldObject.SetActive(false);
+        }
     }
 
     private void OnGotCollective(object sender, GameEventArgs e)

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using DefaultNamespace;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
@@ -6,7 +6,6 @@ using UnityEngine;
 public class LevelManager : MonoBehaviour
 {
     [SerializeField] private Level[] levels;
-    [SerializeField] private Vector3 hubPosition;
     [SerializeField] private CharacterController playerController;
     
     public static LevelManager Instance;
@@ -28,12 +27,31 @@ public class LevelManager : MonoBehaviour
 
     private void Start()
     {
+        InitPlayerPosition();
+        
         EventComponent.Instance.Subscribe(EnterLevelEventArgs.EventId, OnEnterLevel);
     }
 
     private void OnDestroy()
     {
         EventComponent.Instance.Unsubscribe(EnterLevelEventArgs.EventId, OnEnterLevel);
+    }
+
+    private void InitPlayerPosition()
+    {
+        CurrentLevelIndex = DataManager.Instance.Load(DataKey.CurrentLevelId, Configs.InitialLevelId);
+        TeleportPlayerToLevel(CurrentLevelIndex);
+    }
+
+    public void TeleportPlayerToLevel(int levelId)
+    {
+        var level = GetLevel(levelId);
+        OnEnterLevelInternal(levelId);
+        
+        playerController.enabled = false;
+        playerController.transform.position = level.EntryPoint.position;
+        playerController.transform.rotation = level.EntryPoint.rotation;
+        playerController.enabled = true;
     }
 
     private void OnEnterLevel(object sender, GameEventArgs e)
@@ -45,9 +63,17 @@ public class LevelManager : MonoBehaviour
 
     private void OnEnterLevel(int levelId)
     {
+        OnEnterLevelInternal(levelId);
+        
+        DataManager.Instance.Save(DataKey.CurrentLevelId, CurrentLevelIndex);
+    }
+
+    private void OnEnterLevelInternal(int levelId)
+    {
         CurrentLevelIndex = levelId;
 
-        var enteredLevel = System.Array.Find(levels, level => level.LevelId == levelId);
+        var enteredLevel = GetLevel(levelId);
+        enteredLevel.InitAdjacentLevelIds();
         var adjacentLevelIds = enteredLevel.AdjacentLevelIds;
         foreach (var level in levels)
         {
@@ -59,7 +85,7 @@ public class LevelManager : MonoBehaviour
             }
             foreach (var neighborLevelId in adjacentLevelIds)
             {
-                var neighborLevel = System.Array.Find(levels, lv => lv.LevelId == neighborLevelId);
+                var neighborLevel = GetLevel(neighborLevelId);
                 if (!neighborLevel) continue;
                 if ((neighborLevel.AdjacentLevelIds != null && neighborLevel.AdjacentLevelIds.Contains(level.LevelId)) || 
                     Mathf.Abs(neighborLevel.LevelId - level.LevelId) <= 1)
@@ -72,12 +98,27 @@ public class LevelManager : MonoBehaviour
         }
     }
 
+    private Level GetLevel(int levelId)
+    {
+        return System.Array.Find(levels, lv => lv.LevelId == levelId);
+    }
+
     public void GoBackToHub()
     {
-        playerController.enabled = false;
-        playerController.transform.position = hubPosition;
-        playerController.enabled = true;
+        TeleportPlayerToLevel(Configs.HubLevelId);
         
         OnEnterLevel(Configs.HubLevelId);
+    }
+
+    public void ResetLevelCollective(int levelId, int collectiveIndex, bool sendNotification = true)
+    {
+        var level = GetLevel(levelId);
+        level.ResetCollective(collectiveIndex, sendNotification);
+    }
+
+    public void ResetLevelSlot(int levelId, int slotIndex)
+    {
+        var level = GetLevel(levelId);
+        level.ResetSlot(slotIndex, false);
     }
 }

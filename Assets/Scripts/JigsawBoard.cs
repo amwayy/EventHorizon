@@ -16,6 +16,14 @@ public class JigsawBoard : MonoBehaviour
         Assert.IsTrue(width * height == slots.Length);
     }
 
+    public void Init(int levelId)
+    {
+        foreach (var slot in slots)
+        {
+            slot.Init(levelId);
+        }
+    }
+
     public bool CanPut(JigsawRuntimeData jigsawData, JigsawSlot targetSlot)
     {
         if (!slots.Contains(targetSlot)) 

@@ -245,13 +245,12 @@ public class JigsawUI : MonoBehaviour,
     {
         if (!_hoveringSlot) return;
         
+        OnPutOnSlot(_hoveringSlot);
         _hoveringSlot.PutJigsaw(putJigsawData, color);
-        CollectedJigsawsUI.Instance.PutJigsawOnSlot(this, _hoveringSlot);
         foreach (var connectedJigsaw in ConnectedJigsaws)
         {
             connectedJigsaw.OnPutOnSlot(_hoveringSlot);
         }
-        OnPutOnSlot(_hoveringSlot);
         
         AudioManager.Instance.Play(SoundGroup.Put);
     }

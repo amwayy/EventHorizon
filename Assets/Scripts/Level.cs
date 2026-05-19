@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using GameEvent;
 using GameEvent.Args;
@@ -9,16 +10,30 @@ public class Level: MonoBehaviour
     [SerializeField] private List<int> adjacentLevelIds;
     [SerializeField] private JigsawBoard[] jigsawBoards;
     [SerializeField] private Transform jigsawContainer;
+    [SerializeField] private Transform entryPoint;
     
     public List<int> AdjacentLevelIds => adjacentLevelIds;
     public int LevelId => levelIndex;
+    public Transform EntryPoint => entryPoint;
     
     public bool IsActive { get; private set; }
 
+    private bool _isAdjacentLevelsInitialized;
+
     private void Start()
     {
-        adjacentLevelIds.Add(levelIndex - 1);
-        adjacentLevelIds.Add(levelIndex + 1);
+        for (var i = 0; i < jigsawContainer.childCount; i++)
+        {
+            var jigsaw = jigsawContainer.GetChild(i);
+            if (jigsaw.TryGetComponent(out JigsawCollective jigsawCollective))
+            {
+                jigsawCollective.Init(levelIndex, i);
+            }
+        }
+        foreach (var board in jigsawBoards)
+        {
+            board.Init(levelIndex);
+        }
         
         EventComponent.Instance.Subscribe(LevelResetEventArgs.EventId, OnLevelReset);
     }
@@ -65,5 +80,36 @@ public class Level: MonoBehaviour
         {
             jigsawBoard.ClearJigsaws();   
         }
+        
+        LevelManager.Instance.TeleportPlayerToLevel(levelIndex);
     }
+
+    public void ResetCollective(int index, bool sendNotification)
+    {
+        var collectiveTransform = jigsawContainer.GetChild(index);
+        if (collectiveTransform && collectiveTransform.TryGetComponent(out JigsawCollective collective))
+        {
+            collective.ResetState(sendNotification);
+        }
+    }
+
+    public void ResetSlot(int slotIndex, bool sendNotification)
+    {
+        var slotTransform = jigsawBoards[0].transform.GetChild(slotIndex);
+        if (slotTransform && slotTransform.TryGetComponent(out JigsawSlot jigsawSlot))
+        {
+            jigsawSlot.ResetState(sendNotification);
+        }
+    }
+    
+    public void InitAdjacentLevelIds()
+    {
+        if (_isAdjacentLevelsInitialized) return;
+        
+        adjacentLevelIds.Add(levelIndex - 1);
+        adjacentLevelIds.Add(levelIndex + 1);
+        
+        _isAdjacentLevelsInitialized = true;
+    }
+
 }

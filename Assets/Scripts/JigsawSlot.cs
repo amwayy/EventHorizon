@@ -1,7 +1,16 @@
-﻿using DefaultNamespace;
+﻿using System.Collections.Generic;
+using System.Linq;
+using DefaultNamespace;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
+
+public struct SlotJigsawData
+{
+    public (int, int)[] CollectiveIndexes;
+    public JigsawRuntimeData JigsawData;
+    public Color JigsawColor;
+}
 
 [RequireComponent(typeof(Image))]
 public class JigsawSlot : MonoBehaviour
@@ -13,7 +22,8 @@ public class JigsawSlot : MonoBehaviour
     private static readonly int DissolveStrength = Shader.PropertyToID("_DissolveStrength");
     private static readonly int Color1 = Shader.PropertyToID("_Color");
 
-    public RectTransform RectTransform => _slotImage.rectTransform;
+    public RectTransform RectTransform => _slotImage.transform as RectTransform;
+    public int Index => transform.GetSiblingIndex();
     
     private Image _slotImage;
     private JigsawBoard _board;
@@ -23,12 +33,25 @@ public class JigsawSlot : MonoBehaviour
     private MaterialPropertyBlock _mpb;
     private Renderer _rd;
     private Tween _dissolveTween;
+    public int LevelId { get; private set; }
 
     private void Awake()
     {
         _slotImage = GetComponent<Image>();
         _board = GetComponentInParent<JigsawBoard>();
         _mpb = new MaterialPropertyBlock();
+    }
+
+    public void Init(int levelId)
+    {
+        LevelId = levelId;
+        
+        var putJigsaws = 
+            DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
+        if (putJigsaws.TryGetValue((LevelId, Index), out var slotJigsawData))
+        {
+            PutJigsawInternal(slotJigsawData.JigsawData, slotJigsawData.JigsawColor);
+        }
     }
 
     public void Unlock()
@@ -46,6 +69,26 @@ public class JigsawSlot : MonoBehaviour
     }
 
     public void PutJigsaw(JigsawRuntimeData jigsawData, Color color)
+    {
+        PutJigsawInternal(jigsawData, color);
+        
+        var targetCollectives = CollectedJigsawsUI.Instance.GetSlotCollective(this);
+        if (targetCollectives is { Count: > 0 })
+        {
+            var putJigsaws = 
+                DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
+            putJigsaws[(LevelId, Index)] = new SlotJigsawData
+            {
+                CollectiveIndexes = targetCollectives
+                    .Select(collective => (collective.LevelId, collective.CollectiveIndex)).ToArray(),
+                JigsawData = jigsawData,
+                JigsawColor = color,
+            };   
+            DataManager.Instance.Save(DataKey.PutJigsaws, putJigsaws);
+        }
+    }
+
+    private void PutJigsawInternal(JigsawRuntimeData jigsawData, Color color)
     {
         if (!_jigsawSO || _jigsawSO.jigsawName != jigsawData.Source.jigsawName)
         {
@@ -83,12 +126,11 @@ public class JigsawSlot : MonoBehaviour
 
     public void ResetState(bool sendNotification = true)
     {
-        ResetInternal();
-
         if (sendNotification)
         {
             CollectedJigsawsUI.Instance.OnResetSlot(this);   
         }
+        ResetInternal();
     }
 
     public void ClearJigsaw()
@@ -111,6 +153,14 @@ public class JigsawSlot : MonoBehaviour
         
         _isUnlocked = false;
         _jigsawSO = null;
+        
+        var putJigsaws = 
+            DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
+        if (putJigsaws.ContainsKey((LevelId, Index)))
+        {
+            putJigsaws.Remove((LevelId, Index));
+            DataManager.Instance.Save(DataKey.PutJigsaws, putJigsaws);
+        }
     }
 
     public virtual void Show()
