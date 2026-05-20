@@ -246,11 +246,11 @@ public class JigsawUI : MonoBehaviour,
         if (!_hoveringSlot) return;
         
         OnPutOnSlot(_hoveringSlot);
-        _hoveringSlot.PutJigsaw(putJigsawData, color);
         foreach (var connectedJigsaw in ConnectedJigsaws)
         {
             connectedJigsaw.OnPutOnSlot(_hoveringSlot);
         }
+        _hoveringSlot.PutJigsaw(putJigsawData, color);
         
         AudioManager.Instance.Play(SoundGroup.Put);
     }

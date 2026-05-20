@@ -15,12 +15,13 @@ namespace DefaultNamespace
 
         public static CollectedJigsawsUI Instance { get; private set; }
 
-        private readonly Dictionary<JigsawCollective, JigsawUI> _collectedJigsaws = new();
+        private readonly Dictionary<JigsawUI, List<JigsawCollective>> _collectedJigsaws = new();
         private readonly Dictionary<JigsawSlot, List<JigsawUI>> _putJigsaws = new();
 
         private JigsawUI _lastJigsawUI;
         private Camera _mainCamera;
         private ComputeBuffer _resultsBuffer;
+        private readonly List<JigsawUI> _lastCapturedJigsawUI = new();
 
         private void Awake()
         {
@@ -67,7 +68,7 @@ namespace DefaultNamespace
                 args.CapturedJigsawRT.height
             );
 
-            foreach (var (_, jigsawUI) in _collectedJigsaws)
+            foreach (var (jigsawUI, _) in _collectedJigsaws)
             {
                 if (!jigsawUI.gameObject.activeSelf) continue;
 
@@ -88,6 +89,7 @@ namespace DefaultNamespace
                 if (iou > iouThreshold)
                 {
                     HideJigsaw(jigsawUI);
+                    _lastCapturedJigsawUI.Add(jigsawUI);
                 }
             }
         }
@@ -166,8 +168,27 @@ namespace DefaultNamespace
             
             Assert.IsTrue(_lastJigsawUI);
             if (!_lastJigsawUI) yield break;
-            
-            _collectedJigsaws[collective] = _lastJigsawUI;
+
+            if (_collectedJigsaws.TryGetValue(_lastJigsawUI, out var jigsaw))
+            {
+                jigsaw.Add(collective);
+            }
+            else
+            {
+                _collectedJigsaws[_lastJigsawUI] = new List<JigsawCollective> {collective};
+            }
+
+            if (_lastCapturedJigsawUI.Count > 0)
+            {
+                foreach (var capturedJigsawUI in _lastCapturedJigsawUI)
+                {
+                    if (_collectedJigsaws.TryGetValue(capturedJigsawUI, out var collectivesOfUI))
+                    {
+                        _collectedJigsaws[_lastJigsawUI].AddRange(collectivesOfUI);
+                    }
+                }
+                _lastCapturedJigsawUI.Clear();
+            }
             _lastJigsawUI = null;
         }
 
@@ -190,11 +211,11 @@ namespace DefaultNamespace
             }
             if (targetJigsawUIs == null || targetJigsawUIs.Count == 0) return null;
             List<JigsawCollective> targetCollectives = new();
-            foreach (var (collective, collectedJigsawUI) in _collectedJigsaws)
+            foreach (var (collectedJigsawUI, collectives) in _collectedJigsaws)
             {
                 if (targetJigsawUIs.Contains(collectedJigsawUI))
                 {
-                    targetCollectives.Add(collective);
+                    targetCollectives.AddRange(collectives);
                 }
             }
             return targetCollectives;
@@ -202,11 +223,19 @@ namespace DefaultNamespace
         
         public void OnResetCollective(JigsawCollective collective)
         {
-            if (_collectedJigsaws.TryGetValue(collective, out var jigsawUI))
+            foreach (var (jigsawUI, collectives) in _collectedJigsaws)
             {
-                HideJigsaw(jigsawUI);
-                
-                _collectedJigsaws.Remove(collective);
+                if (collectives.Contains(collective))
+                {
+                    HideJigsaw(jigsawUI);
+                    // _collectedJigsaws.Remove(jigsawUI);
+
+                    foreach (var otherCollective in collectives)
+                    {
+                        if (otherCollective == collective) continue;
+                        otherCollective.ResetState(sendNotification: false);
+                    }
+                }
             }
             
             var putJigsawsData = 
@@ -254,13 +283,17 @@ namespace DefaultNamespace
 
         public void ResetCollection()
         {
-            foreach (var (collective, jigsawUI) in _collectedJigsaws)
+            foreach (var (jigsawUI, collectives) in _collectedJigsaws)
             {
                 if (!jigsawUI.gameObject.activeSelf) continue;
                 HideJigsaw(jigsawUI);
-                collective.ResetState(sendNotification: false);
+                foreach (var collective in collectives)
+                {
+                    collective.ResetState(sendNotification: false);   
+                }
             }
 
+            _collectedJigsaws.Clear();
             foreach (Transform jigsaw in transform)
             {
                 jigsaw.gameObject.SetActive(false);
@@ -269,7 +302,7 @@ namespace DefaultNamespace
 
         public void OnEndDragJigsawUI(JigsawUI jigsawUI)
         {
-            foreach (var (_, collectedJigsawUI) in _collectedJigsaws)
+            foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
             {
                 if (!collectedJigsawUI.gameObject.activeSelf) continue;
                 collectedJigsawUI.UpdateVisibleArea();

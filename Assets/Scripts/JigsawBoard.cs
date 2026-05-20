@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -9,7 +8,7 @@ public class JigsawBoard : MonoBehaviour
     [SerializeField] private int width;
     [SerializeField] private int height;
 
-    private readonly Dictionary<int, JigsawRuntimeData> _onBoardJigsawData = new();
+    private bool _isShowingSlots = true;
     
     private void Awake()
     {
@@ -28,11 +27,13 @@ public class JigsawBoard : MonoBehaviour
     {
         if (!slots.Contains(targetSlot)) 
             return false;
+        
+        var slotJigsawDataArray = slots.Select(slot => slot.JigsawData).ToArray();
 
         int index = System.Array.IndexOf(slots, targetSlot);
 
         // ❗ 已经被占
-        if (_onBoardJigsawData.ContainsKey(index))
+        if (slotJigsawDataArray[index].Source)
             return false;
 
         int x = index % width;
@@ -55,9 +56,9 @@ public class JigsawBoard : MonoBehaviour
         if (y > 0)
         {
             int upIndex = index - width;
-            if (_onBoardJigsawData.TryGetValue(upIndex, out var upPiece))
+            if (slotJigsawDataArray[upIndex].Source)
             {
-                if (!CanFit(jigsawData.UpEdgeType, upPiece.DownEdgeType))
+                if (!CanFit(jigsawData.UpEdgeType, slotJigsawDataArray[upIndex].DownEdgeType))
                     return false;
             }
         }
@@ -66,9 +67,9 @@ public class JigsawBoard : MonoBehaviour
         if (y < height - 1)
         {
             int downIndex = index + width;
-            if (_onBoardJigsawData.TryGetValue(downIndex, out var downPiece))
+            if (slotJigsawDataArray[downIndex].Source)
             {
-                if (!CanFit(jigsawData.DownEdgeType, downPiece.UpEdgeType))
+                if (!CanFit(jigsawData.DownEdgeType, slotJigsawDataArray[downIndex].UpEdgeType))
                     return false;
             }
         }
@@ -77,9 +78,9 @@ public class JigsawBoard : MonoBehaviour
         if (x > 0)
         {
             int leftIndex = index - 1;
-            if (_onBoardJigsawData.TryGetValue(leftIndex, out var leftPiece))
+            if (slotJigsawDataArray[leftIndex].Source)
             {
-                if (!CanFit(jigsawData.LeftEdgeType, leftPiece.RightEdgeType))
+                if (!CanFit(jigsawData.LeftEdgeType, slotJigsawDataArray[leftIndex].RightEdgeType))
                     return false;
             }
         }
@@ -88,9 +89,9 @@ public class JigsawBoard : MonoBehaviour
         if (x < width - 1)
         {
             int rightIndex = index + 1;
-            if (_onBoardJigsawData.TryGetValue(rightIndex, out var rightPiece))
+            if (slotJigsawDataArray[rightIndex].Source)
             {
-                if (!CanFit(jigsawData.RightEdgeType, rightPiece.LeftEdgeType))
+                if (!CanFit(jigsawData.RightEdgeType, slotJigsawDataArray[rightIndex].LeftEdgeType))
                     return false;
             }
         }
@@ -98,15 +99,17 @@ public class JigsawBoard : MonoBehaviour
         return true;
     }
     
-    public bool IsFilled()
+    private bool IsFilled()
     {
         // 👉 1. 是否填满
-        if (_onBoardJigsawData.Count != slots.Length)
+        var slotJigsawDataArray = slots.Select(slot => slot.JigsawData).ToArray();
+        if (slotJigsawDataArray.Any(data => !data.Source))
             return false;
 
         for (int index = 0; index < slots.Length; index++)
         {
-            var piece = _onBoardJigsawData[index];
+            var pieceData = slotJigsawDataArray[index];
+            if (!pieceData.Source) return false;
 
             int x = index % width;
             int y = index / width;
@@ -114,52 +117,52 @@ public class JigsawBoard : MonoBehaviour
             // 👉 上
             if (y > 0)
             {
-                var up = _onBoardJigsawData[index - width];
-                if (!Match(piece.UpEdgeType, up.DownEdgeType))
+                var up = slotJigsawDataArray[index - width];
+                if (!Match(pieceData.UpEdgeType, up.DownEdgeType))
                     return false;
             }
             else
             {
-                if (piece.UpEdgeType != JigsawEdgeType.Flat)
+                if (pieceData.UpEdgeType != JigsawEdgeType.Flat)
                     return false;
             }
 
             // 👉 下
             if (y < height - 1)
             {
-                var down = _onBoardJigsawData[index + width];
-                if (!Match(piece.DownEdgeType, down.UpEdgeType))
+                var down = slotJigsawDataArray[index + width];
+                if (!Match(pieceData.DownEdgeType, down.UpEdgeType))
                     return false;
             }
             else
             {
-                if (piece.DownEdgeType != JigsawEdgeType.Flat)
+                if (pieceData.DownEdgeType != JigsawEdgeType.Flat)
                     return false;
             }
 
             // 👉 左
             if (x > 0)
             {
-                var left = _onBoardJigsawData[index - 1];
-                if (!Match(piece.LeftEdgeType, left.RightEdgeType))
+                var left = slotJigsawDataArray[index - 1];
+                if (!Match(pieceData.LeftEdgeType, left.RightEdgeType))
                     return false;
             }
             else
             {
-                if (piece.LeftEdgeType != JigsawEdgeType.Flat)
+                if (pieceData.LeftEdgeType != JigsawEdgeType.Flat)
                     return false;
             }
 
             // 👉 右
             if (x < width - 1)
             {
-                var right = _onBoardJigsawData[index + 1];
-                if (!Match(piece.RightEdgeType, right.LeftEdgeType))
+                var right = slotJigsawDataArray[index + 1];
+                if (!Match(pieceData.RightEdgeType, right.LeftEdgeType))
                     return false;
             }
             else
             {
-                if (piece.RightEdgeType != JigsawEdgeType.Flat)
+                if (pieceData.RightEdgeType != JigsawEdgeType.Flat)
                     return false;
             }
         }
@@ -191,17 +194,15 @@ public class JigsawBoard : MonoBehaviour
         return false;
     }
 
-    public void Put(JigsawRuntimeData jigsawData, JigsawSlot targetSlot)
+    public void OnPutOnSlot()
     {
-        var index = System.Array.IndexOf(slots, targetSlot);
-        _onBoardJigsawData[index] = jigsawData;
-
         if (IsFilled())
         {
             foreach (var slot in slots)
             {
                 slot.Unlock();
             }
+            _isShowingSlots = false;
         }
     }
 
@@ -212,18 +213,26 @@ public class JigsawBoard : MonoBehaviour
             slot.gameObject.SetActive(true);
             slot.ResetState();
         }
-        _onBoardJigsawData.Clear();
     }
     
     public void ClearSlot(JigsawSlot sender)
     {
-        var index = System.Array.IndexOf(slots, sender);
-        _onBoardJigsawData.Remove(index);
-        
         foreach (var slot in slots)
         {
             if (slot == sender)  continue;
             slot.Show();
         }
+    }
+
+    public void ShowSlots()
+    {
+        if (_isShowingSlots) return;
+        
+        foreach (var slot in slots)
+        {
+            slot.Show();
+        }
+        
+        _isShowingSlots = true;
     }
 }

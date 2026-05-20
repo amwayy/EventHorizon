@@ -8,7 +8,8 @@ using UnityEngine.UI;
 public struct SlotJigsawData
 {
     public (int, int)[] CollectiveIndexes;
-    public JigsawRuntimeData JigsawData;
+    public int RotationAngle;
+    public string JigsawName;
     public Color JigsawColor;
 }
 
@@ -29,11 +30,11 @@ public class JigsawSlot : MonoBehaviour
     private JigsawBoard _board;
     private bool _isUnlocked;
     private GameObject _jigsaw;
-    private JigsawSO _jigsawSO;
     private MaterialPropertyBlock _mpb;
     private Renderer _rd;
     private Tween _dissolveTween;
     public int LevelId { get; private set; }
+    public JigsawRuntimeData JigsawData;
 
     private void Awake()
     {
@@ -50,7 +51,9 @@ public class JigsawSlot : MonoBehaviour
             DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
         if (putJigsaws.TryGetValue((LevelId, Index), out var slotJigsawData))
         {
-            PutJigsawInternal(slotJigsawData.JigsawData, slotJigsawData.JigsawColor);
+            var jigsawSo = JigsawManager.Instance.GetJigsawSo(slotJigsawData.JigsawName);
+            var jigsawData = Utility.Rotate(jigsawSo, slotJigsawData.RotationAngle);
+            PutJigsawInternal(jigsawData, slotJigsawData.JigsawColor);
         }
     }
 
@@ -81,7 +84,8 @@ public class JigsawSlot : MonoBehaviour
             {
                 CollectiveIndexes = targetCollectives
                     .Select(collective => (collective.LevelId, collective.CollectiveIndex)).ToArray(),
-                JigsawData = jigsawData,
+                RotationAngle = jigsawData.RotateAngle,
+                JigsawName = jigsawData.Source.jigsawName,
                 JigsawColor = color,
             };   
             DataManager.Instance.Save(DataKey.PutJigsaws, putJigsaws);
@@ -90,7 +94,7 @@ public class JigsawSlot : MonoBehaviour
 
     private void PutJigsawInternal(JigsawRuntimeData jigsawData, Color color)
     {
-        if (!_jigsawSO || _jigsawSO.jigsawName != jigsawData.Source.jigsawName)
+        if (!JigsawData.Source || JigsawData.Source.jigsawName != jigsawData.Source.jigsawName)
         {
             if (_jigsaw)
             {
@@ -98,7 +102,7 @@ public class JigsawSlot : MonoBehaviour
             }
             _jigsaw = Instantiate(jigsawData.Source.prefab, jigsawContainer);
             _jigsaw.transform.localPosition = Vector3.zero;
-            _jigsawSO = jigsawData.Source;
+            JigsawData = jigsawData;
             _rd = _jigsaw.GetComponentInChildren<Renderer>();
             
             _rd.GetPropertyBlock(_mpb);
@@ -106,7 +110,7 @@ public class JigsawSlot : MonoBehaviour
             _rd.SetPropertyBlock(_mpb);
         }
         transform.localRotation = Quaternion.Euler(0, 0, jigsawData.RotateAngle);
-        _board.Put(jigsawData, this);
+        _board.OnPutOnSlot();
     }
 
     private void Dissolve()
@@ -152,7 +156,7 @@ public class JigsawSlot : MonoBehaviour
         }
         
         _isUnlocked = false;
-        _jigsawSO = null;
+        JigsawData.Source = null;
         
         var putJigsaws = 
             DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
@@ -161,6 +165,8 @@ public class JigsawSlot : MonoBehaviour
             putJigsaws.Remove((LevelId, Index));
             DataManager.Instance.Save(DataKey.PutJigsaws, putJigsaws);
         }
+        
+        _board.ShowSlots();
     }
 
     public virtual void Show()
@@ -173,8 +179,11 @@ public class JigsawSlot : MonoBehaviour
             _mpb.SetFloat(DissolveStrength, 0f);
             _rd.SetPropertyBlock(_mpb);
         }
-        
-        _slotImage.enabled = true;
+
+        if (_slotImage)
+        {
+            _slotImage.enabled = true;   
+        }
         texture.SetActive(true);
     }
 }

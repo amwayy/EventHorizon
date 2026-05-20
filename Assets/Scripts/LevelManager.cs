@@ -87,6 +87,7 @@ public class LevelManager : MonoBehaviour
             {
                 var neighborLevel = GetLevel(neighborLevelId);
                 if (!neighborLevel) continue;
+                neighborLevel.InitAdjacentLevelIds();
                 if ((neighborLevel.AdjacentLevelIds != null && neighborLevel.AdjacentLevelIds.Contains(level.LevelId)) || 
                     Mathf.Abs(neighborLevel.LevelId - level.LevelId) <= 1)
                 {

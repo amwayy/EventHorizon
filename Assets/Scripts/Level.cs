@@ -15,8 +15,6 @@ public class Level: MonoBehaviour
     public List<int> AdjacentLevelIds => adjacentLevelIds;
     public int LevelId => levelIndex;
     public Transform EntryPoint => entryPoint;
-    
-    public bool IsActive { get; private set; }
 
     private bool _isAdjacentLevelsInitialized;
 
@@ -45,7 +43,7 @@ public class Level: MonoBehaviour
 
     private void OnLevelReset(object sender, GameEventArgs e)
     {
-        if (!IsActive) return;
+        if (LevelManager.Instance.CurrentLevelIndex != levelIndex) return;
         
         ResetLevel();
     }
@@ -54,7 +52,6 @@ public class Level: MonoBehaviour
     {
         if (!other.gameObject.TryGetComponent(out CharacterController _)) return;
         
-        IsActive = true;
         EventComponent.Instance.Fire(this, EnterLevelEventArgs.Create(levelIndex));
     }
 
@@ -62,7 +59,6 @@ public class Level: MonoBehaviour
     {
         if (!other.gameObject.TryGetComponent(out CharacterController _)) return;
         
-        IsActive = false;
         EventComponent.Instance.Fire(this, ExitLevelEventArgs.Create(levelIndex));
     }
 
