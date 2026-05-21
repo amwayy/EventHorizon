@@ -208,8 +208,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u6309Esc\u6253\u5F00\u83DC\u5355\u56DE\u5230\u5927\u5385"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 448b8f954cfebb84ca277a1a2b5827cf, type: 2}
-  m_sharedMaterial: {fileID: 6049349442392014087, guid: 448b8f954cfebb84ca277a1a2b5827cf, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: d03c33133741a304fa4f964610395e22, type: 2}
+  m_sharedMaterial: {fileID: 6049349442392014087, guid: d03c33133741a304fa4f964610395e22, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

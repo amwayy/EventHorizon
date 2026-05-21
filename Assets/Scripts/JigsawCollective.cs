@@ -27,8 +27,8 @@ public class JigsawCollective : MonoBehaviour
     
     public JigsawSO[] TargetJigsawData => targetJigsawData;
     
-    public int LevelId { get; private set; }
-    public int CollectiveIndex { get; private set; }
+    public int LevelId { get; protected set; }
+    public int CollectiveIndex { get; protected set; }
 
     private void Start()
     {
@@ -40,7 +40,7 @@ public class JigsawCollective : MonoBehaviour
         EventComponent.Instance.Unsubscribe(CapturedJigsawEventArgs.EventId, OnGotCollective);
     }
 
-    public void Init(int levelId, int collectiveIndex)
+    public virtual void Init(int levelId, int collectiveIndex)
     {
         LevelId = levelId;
         CollectiveIndex = collectiveIndex;

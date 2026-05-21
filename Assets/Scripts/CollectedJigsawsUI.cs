@@ -166,7 +166,6 @@ namespace DefaultNamespace
         {
             yield return null;
             
-            Assert.IsTrue(_lastJigsawUI);
             if (!_lastJigsawUI) yield break;
 
             if (_collectedJigsaws.TryGetValue(_lastJigsawUI, out var jigsaw))

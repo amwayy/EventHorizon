@@ -11,6 +11,7 @@ public struct SlotJigsawData
     public int RotationAngle;
     public string JigsawName;
     public Color JigsawColor;
+    public WallCollectiveData[] WallCollectiveDataArray;
 }
 
 [RequireComponent(typeof(Image))]
@@ -82,11 +83,13 @@ public class JigsawSlot : MonoBehaviour
                 DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
             putJigsaws[(LevelId, Index)] = new SlotJigsawData
             {
-                CollectiveIndexes = targetCollectives
+                CollectiveIndexes = targetCollectives.Where(collective => collective is not WallJigsawCollective)
                     .Select(collective => (collective.LevelId, collective.CollectiveIndex)).ToArray(),
                 RotationAngle = jigsawData.RotateAngle,
                 JigsawName = jigsawData.Source.jigsawName,
                 JigsawColor = color,
+                WallCollectiveDataArray = targetCollectives.Where(collective => collective is WallJigsawCollective)
+                    .Select(collective => (collective as WallJigsawCollective).GetCollectiveData()).ToArray(),
             };   
             DataManager.Instance.Save(DataKey.PutJigsaws, putJigsaws);
         }

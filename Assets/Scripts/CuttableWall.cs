@@ -43,6 +43,11 @@ namespace DefaultNamespace
             resultBufferB.transform.position = wallMeshFilter.transform.position;
             resultBufferA.transform.rotation = wallMeshFilter.transform.rotation;
             resultBufferB.transform.rotation = wallMeshFilter.transform.rotation;
+
+            foreach (var collective in jigsawCollectives)
+            {
+                collective.jigsawCollective.Init(levelId, transform.GetSiblingIndex());
+            }
         }
 
         private void Start()
@@ -63,8 +68,39 @@ namespace DefaultNamespace
             
             _mainCamera = Camera.main;
             
+            InitHoles();
+            
             EventComponent.Instance.Subscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
             EventComponent.Instance.Subscribe(LevelResetEventArgs.EventId, OnLevelReset);
+        }
+
+        private void InitHoles()
+        {
+            var putJigsaws = 
+                DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
+            foreach (var (_, jigsawData) in putJigsaws)
+            {
+                foreach (var wallCollectiveData in jigsawData.WallCollectiveDataArray)
+                {
+                    if (wallCollectiveData.LevelId == levelId &&
+                        wallCollectiveData.WallIndex == transform.GetSiblingIndex())
+                    {
+                        var jigsawCollectiveData = jigsawCollectives.Find(
+                            data => data.jigsawData.jigsawName == wallCollectiveData.JigsawName);
+                        if (jigsawCollectiveData == null) return;
+                        var jigsawCollective = jigsawCollectiveData.jigsawCollective;
+                        jigsawCollective.transform.position = wallCollectiveData.Position;
+                        jigsawCollective.transform.rotation = wallCollectiveData.Rotation;
+                        jigsawCollective.transform.localScale = wallCollectiveData.Scale;
+                        
+                        // todo: remove repetitive codes
+                        var brush = _jigsawBrushes[jigsawCollectiveData.jigsawData.jigsawName];
+                        CutJigsawHole(brush);
+                        CollectedJigsawsUI.Instance.AddJigsaw(jigsawCollective);
+                        (jigsawCollective as WallJigsawCollective).SetJigsawName(jigsawCollectiveData.jigsawData.jigsawName);
+                    }
+                }
+            }
         }
 
         private void OnDestroy()
@@ -98,9 +134,11 @@ namespace DefaultNamespace
             var scaleFactor = (args.CapturedJigsawRT.width / jigsawScreenRect.width + args.CapturedJigsawRT.height /  jigsawScreenRect.height) * 0.5f;
             scaleFactor *= cutScaleFactor;
             jigsawCollective.transform.localScale = new Vector3(scaleFactor, scaleFactor, 10f);
+            
             var brush = _jigsawBrushes[jigsawCollectiveData.jigsawData.jigsawName];
             CutJigsawHole(brush);
             CollectedJigsawsUI.Instance.AddJigsaw(jigsawCollective);
+            (jigsawCollective as WallJigsawCollective).SetJigsawName(jigsawCollectiveData.jigsawData.jigsawName);
         }
 
         private void CutJigsawHole(CSGBrush jigsawBrush)
