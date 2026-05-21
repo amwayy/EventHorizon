@@ -125,10 +125,7 @@ public class JigsawCollective : MonoBehaviour
             worldObject.gameObject.SetActive(false);
             worldObject.gameObject.SetActive(true);
         }
-
-        if (sendNotification)
-        {
-            CollectedJigsawsUI.Instance.OnResetCollective(this);   
-        }
+        
+        CollectedJigsawsUI.Instance.OnResetCollective(this, sendNotification);
     }
 }

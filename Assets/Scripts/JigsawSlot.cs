@@ -133,10 +133,7 @@ public class JigsawSlot : MonoBehaviour
 
     public void ResetState(bool sendNotification = true)
     {
-        if (sendNotification)
-        {
-            CollectedJigsawsUI.Instance.OnResetSlot(this);   
-        }
+        CollectedJigsawsUI.Instance.OnResetSlot(this, sendNotification);
         ResetInternal();
     }
 

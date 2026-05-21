@@ -21,7 +21,7 @@ namespace DefaultNamespace
         private JigsawUI _lastJigsawUI;
         private Camera _mainCamera;
         private ComputeBuffer _resultsBuffer;
-        private readonly List<JigsawUI> _lastCapturedJigsawUI = new();
+        private readonly List<JigsawUI> _lastCapturedJigsawUIs = new();
 
         private void Awake()
         {
@@ -89,7 +89,7 @@ namespace DefaultNamespace
                 if (iou > iouThreshold)
                 {
                     HideJigsaw(jigsawUI);
-                    _lastCapturedJigsawUI.Add(jigsawUI);
+                    _lastCapturedJigsawUIs.Add(jigsawUI);
                 }
             }
         }
@@ -177,16 +177,17 @@ namespace DefaultNamespace
                 _collectedJigsaws[_lastJigsawUI] = new List<JigsawCollective> {collective};
             }
 
-            if (_lastCapturedJigsawUI.Count > 0)
+            if (_lastCapturedJigsawUIs.Count > 0)
             {
-                foreach (var capturedJigsawUI in _lastCapturedJigsawUI)
+                foreach (var capturedJigsawUI in _lastCapturedJigsawUIs)
                 {
                     if (_collectedJigsaws.TryGetValue(capturedJigsawUI, out var collectivesOfUI))
                     {
                         _collectedJigsaws[_lastJigsawUI].AddRange(collectivesOfUI);
                     }
+                    // _collectedJigsaws.Remove(capturedJigsawUI);
                 }
-                _lastCapturedJigsawUI.Clear();
+                _lastCapturedJigsawUIs.Clear();
             }
             _lastJigsawUI = null;
         }
@@ -195,16 +196,18 @@ namespace DefaultNamespace
         {
             _putJigsaws.TryAdd(slot, new List<JigsawUI>());
             _putJigsaws[slot].Add(jigsawUI);
+            
+            // _collectedJigsaws.Remove(jigsawUI);
         }
 
         public List<JigsawCollective> GetSlotCollective(JigsawSlot slot)
         {
             List<JigsawUI> targetJigsawUIs = null;
-            foreach (var (putSlot, jigsawUI) in _putJigsaws)
+            foreach (var (putSlot, jigsawUIs) in _putJigsaws)
             {
                 if (putSlot == slot)
                 {
-                    targetJigsawUIs = jigsawUI;
+                    targetJigsawUIs = jigsawUIs;
                     break;
                 }
             }
@@ -220,14 +223,15 @@ namespace DefaultNamespace
             return targetCollectives;
         }
         
-        public void OnResetCollective(JigsawCollective collective)
+        public void OnResetCollective(JigsawCollective collective, bool updateSlot)
         {
+            // var jigsawUIsToRemove = new List<JigsawUI>();
             foreach (var (jigsawUI, collectives) in _collectedJigsaws)
             {
                 if (collectives.Contains(collective))
                 {
                     HideJigsaw(jigsawUI);
-                    // _collectedJigsaws.Remove(jigsawUI);
+                    // jigsawUIsToRemove.Add(jigsawUI);
 
                     foreach (var otherCollective in collectives)
                     {
@@ -236,25 +240,32 @@ namespace DefaultNamespace
                     }
                 }
             }
-            
-            var putJigsawsData = 
-                DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
-            foreach (var (slotIndex, data) in putJigsawsData)
+            // foreach (var jigsawUI in jigsawUIsToRemove)
+            // {
+            //     _collectedJigsaws.Remove(jigsawUI);
+            // }
+
+            if (updateSlot)
             {
-                if (data.CollectiveIndexes.Contains((collective.LevelId, collective.CollectiveIndex)))
+                var putJigsawsData = 
+                    DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
+                foreach (var (slotIndex, data) in putJigsawsData)
                 {
-                    LevelManager.Instance.ResetLevelSlot(slotIndex.Item1, slotIndex.Item2);
-                    foreach (var collectiveIndex in data.CollectiveIndexes)
+                    if (data.CollectiveIndexes.Contains((collective.LevelId, collective.CollectiveIndex)))
                     {
-                        if (collectiveIndex == (collective.LevelId, collective.CollectiveIndex)) continue;
-                        LevelManager.Instance.ResetLevelCollective(collectiveIndex.Item1, collectiveIndex.Item2, false);
+                        LevelManager.Instance.ResetLevelSlot(slotIndex.Item1, slotIndex.Item2);
+                        foreach (var collectiveIndex in data.CollectiveIndexes)
+                        {
+                            if (collectiveIndex == (collective.LevelId, collective.CollectiveIndex)) continue;
+                            LevelManager.Instance.ResetLevelCollective(collectiveIndex.Item1, collectiveIndex.Item2, false);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
 
-        public void OnResetSlot(JigsawSlot slot)
+        public void OnResetSlot(JigsawSlot slot, bool updateCollective)
         {
             if (!_putJigsaws.TryGetValue(slot, out var jigsaws)) return;
 
@@ -264,18 +275,21 @@ namespace DefaultNamespace
             }
             
             _putJigsaws.Remove(slot);
-            
-            var putJigsawsData = 
-                DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
-            foreach (var (slotIndex, data) in putJigsawsData)
+
+            if (updateCollective)
             {
-                if (slotIndex == (slot.LevelId, slot.Index))
+                var putJigsawsData = 
+                    DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
+                foreach (var (slotIndex, data) in putJigsawsData)
                 {
-                    foreach (var collectiveIndex in data.CollectiveIndexes)
+                    if (slotIndex == (slot.LevelId, slot.Index))
                     {
-                        LevelManager.Instance.ResetLevelCollective(collectiveIndex.Item1, collectiveIndex.Item2);
+                        foreach (var collectiveIndex in data.CollectiveIndexes)
+                        {
+                            LevelManager.Instance.ResetLevelCollective(collectiveIndex.Item1, collectiveIndex.Item2);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
