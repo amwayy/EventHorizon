@@ -1,3 +1,5 @@
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,12 +11,18 @@ namespace DefaultNamespace
         [SerializeField] private Button quitButton;
         [SerializeField] private Button backToHubButton;
         [SerializeField] private Canvas canvas;
+        [SerializeField] private TMP_Text versionText;
         
         private void Awake()
         {
             backButton.onClick.AddListener(Resume);
             quitButton.onClick.AddListener(Quit);
             backToHubButton.onClick.AddListener(GoBackToHub);
+        }
+
+        private void Start()
+        {
+            versionText.text = Application.version;
         }
 
         private void OnEnable()
