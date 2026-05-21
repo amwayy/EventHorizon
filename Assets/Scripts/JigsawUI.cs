@@ -175,10 +175,11 @@ public class JigsawUI : MonoBehaviour,
         _isBlocked = isBlocked;
     }
 
-    public void UpdateVisibleArea()
+    public void UpdateVisibleArea(bool clearOutline = true)
     {
         if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return;
-        _visibleAreaJigsawData = ScreenshotController.Instance.GetUISameColorRegionShape(visiblePosition, out var rect, out var rt);
+        _visibleAreaJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(
+            visiblePosition, out var rect, out var rt, clearOutline: clearOutline);
         _visibleRect = rect;
         
         _visiblePartRt?.Release();
@@ -270,5 +271,11 @@ public class JigsawUI : MonoBehaviour,
     {
         var hasVisiblePoint = _rawImageHandler.TryGetAnyVisibleScreenPosition(out result);
         return hasVisiblePoint;
+    }
+
+    public bool IsOriginalShape()
+    {
+        return _originalJigsawData.Source.jigsawName == _visibleAreaJigsawData.Source.jigsawName &&
+               _originalJigsawData.RotateAngle == _visibleAreaJigsawData.RotateAngle;
     }
 }

@@ -223,30 +223,29 @@ namespace DefaultNamespace
             return targetCollectives;
         }
         
-        public void OnResetCollective(JigsawCollective collective, bool updateSlot)
+        public void OnResetCollective(JigsawCollective collective, bool updateOthers)
         {
-            // var jigsawUIsToRemove = new List<JigsawUI>();
+            List<JigsawCollective> ui2Collectives = null;
             foreach (var (jigsawUI, collectives) in _collectedJigsaws)
             {
                 if (collectives.Contains(collective))
                 {
                     HideJigsaw(jigsawUI);
-                    // jigsawUIsToRemove.Add(jigsawUI);
+                    ui2Collectives = collectives;
+                }
+            }
 
-                    foreach (var otherCollective in collectives)
+            if (updateOthers)
+            {
+                if (ui2Collectives != null)
+                {
+                    foreach (var otherCollective in ui2Collectives)
                     {
                         if (otherCollective == collective) continue;
                         otherCollective.ResetState(sendNotification: false);
-                    }
+                    }   
                 }
-            }
-            // foreach (var jigsawUI in jigsawUIsToRemove)
-            // {
-            //     _collectedJigsaws.Remove(jigsawUI);
-            // }
-
-            if (updateSlot)
-            {
+                
                 var putJigsawsData = 
                     DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
                 foreach (var (slotIndex, data) in putJigsawsData)
