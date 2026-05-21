@@ -30,7 +30,7 @@ public class JigsawUI : MonoBehaviour,
     
     public RectTransform RectTransform => _rectTransform;
     public Color Color => rawImage.color;
-    public List<JigsawUI> ConnectedJigsaws { get; private set; } = new();
+    public readonly List<JigsawUI> ConnectedJigsaws = new();
     
     private int _openHandCursorId;
     private int _closeHandCursorId;
@@ -48,7 +48,6 @@ public class JigsawUI : MonoBehaviour,
     private JigsawRuntimeData _visibleAreaJigsawData;
     private Rect _visibleRect;
     private RenderTexture _visiblePartRt;
-    private bool _isOriginal = true;
     private bool _isBlocked;
 
     private void Awake()
@@ -150,7 +149,6 @@ public class JigsawUI : MonoBehaviour,
     {
         CursorStack.Pop(_closeHandCursorId);
         
-        MarkOriginal(true);
         MarkBlocked(false);
         CollectedJigsawsUI.Instance.OnEndDragJigsawUI(this);
         var jigsawRect = Utility.GetUIRectScreenRect(_rectTransform, _mainCamera);
@@ -158,7 +156,7 @@ public class JigsawUI : MonoBehaviour,
         {
             UpdateVisibleArea();
         }
-        if (_isOriginal)
+        if (!_isBlocked && ConnectedJigsaws.Count == 0)
         {
             _visibleRect = jigsawRect;
             _visibleAreaJigsawData = _originalJigsawData;
@@ -175,15 +173,6 @@ public class JigsawUI : MonoBehaviour,
     public void MarkBlocked(bool isBlocked)
     {
         _isBlocked = isBlocked;
-        if (isBlocked)
-        {
-            _isOriginal = false;
-        }
-    }
-
-    public void MarkOriginal(bool isOriginal)
-    {
-        _isOriginal = isOriginal;
     }
 
     public void UpdateVisibleArea()

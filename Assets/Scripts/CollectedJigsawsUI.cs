@@ -315,6 +315,7 @@ namespace DefaultNamespace
 
         public void OnEndDragJigsawUI(JigsawUI jigsawUI)
         {
+            jigsawUI.ConnectedJigsaws.Clear();
             foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
             {
                 if (!collectedJigsawUI.gameObject.activeSelf) continue;
@@ -337,8 +338,6 @@ namespace DefaultNamespace
                 {
                     jigsawUI.MarkBlocked(false);
                     collectedJigsawUI.MarkBlocked(false);
-                    collectedJigsawUI.MarkOriginal(false);
-                    collectedJigsawUI.MarkOriginal(false);
                     
                     jigsawUI.ConnectedJigsaws.Add(collectedJigsawUI);
                     collectedJigsawUI.ConnectedJigsaws.Add(jigsawUI);

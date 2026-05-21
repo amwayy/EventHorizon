@@ -1,4 +1,6 @@
-﻿using DefaultNamespace;
+﻿using System;
+using System.Collections;
+using DefaultNamespace;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
@@ -117,14 +119,17 @@ public class ScreenshotController : MonoBehaviour
             
             Vector2 mousePos = Input.mousePosition;
             DoColorFloodFill(mousePos);
+        }
+    }
 
-            if (Input.GetMouseButtonUp(0))
-            {
-                var hoveringJigsawUI = Utility.GetHoveringJigsawUI();
-                if (hoveringJigsawUI && hoveringJigsawUI.ConnectedJigsaws.Count == 0) return;
+    private void LateUpdate()
+    {
+        if (IsInScreenshot && !GameManager.Instance.IsInMenu && Input.GetMouseButtonUp(0))
+        {
+            var hoveringJigsawUI = Utility.GetHoveringJigsawUI();
+            if (hoveringJigsawUI && hoveringJigsawUI.ConnectedJigsaws.Count == 0) return;
                 
-                TryCaptureMouseRegion();
-            }
+            TryCaptureMouseRegion();
         }
     }
 
