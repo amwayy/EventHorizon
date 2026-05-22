@@ -70,7 +70,7 @@ public static class Utility
     public static JigsawUI GetHoveringJigsawUI()
     {
         PointerEventData eventData = new PointerEventData(EventSystem.current);
-        eventData.position = Input.mousePosition;
+        eventData.position = GameManager.Instance.GetViewportMousePosition();
 
         List<RaycastResult> results = new List<RaycastResult>();
         EventSystem.current.RaycastAll(eventData, results);

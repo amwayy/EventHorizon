@@ -112,7 +112,7 @@ public class JigsawUI : MonoBehaviour,
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _rectTransform.parent as RectTransform,
-            eventData.position,
+            GameManager.Instance.GetViewportPosition(eventData.position),
             cam,
             out var localPoint
         );
@@ -128,14 +128,14 @@ public class JigsawUI : MonoBehaviour,
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _rectTransform.parent as RectTransform,
-            eventData.position,
+            GameManager.Instance.GetViewportPosition(eventData.position),
             cam,
             out var localPoint
         );
 
         _rectTransform.anchoredPosition = localPoint + _dragOffset;
         
-        var ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+        var ray = _mainCamera.ScreenPointToRay(GameManager.Instance.GetViewportMousePosition());
         if (!Physics.Raycast(ray, out var hit) || !hit.collider.TryGetComponent(out JigsawSlot slot))
         {
             _hoveringSlot = null;

@@ -84,4 +84,17 @@ public class GameManager: MonoBehaviour
         }
         Time.timeScale = speed;
     }
+
+    public Vector3 GetViewportPosition(Vector3 screenPosition)
+    {
+        var scaleFactorX = (float)Configs.ViewportWidth / Screen.width;
+        var scaleFactorY = (float)Configs.ViewportHeight / Screen.height;
+        return new Vector3(screenPosition.x * scaleFactorX, screenPosition.y * scaleFactorY, screenPosition.z);
+    }
+
+    public Vector3 GetViewportMousePosition()
+    {
+        var mousePos = Input.mousePosition;
+        return GetViewportPosition(mousePos);
+    }
 }

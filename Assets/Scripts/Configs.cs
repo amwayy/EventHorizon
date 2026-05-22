@@ -9,6 +9,10 @@ public static class Configs
     public const int CanBackToHubLevelIdMin = 200;
 
     public const int InitialLevelId = 101;
+    
+    public const int ViewportWidth = 480;
+    
+    public const int ViewportHeight = 270;
 
     public static float GetShapeCompareThreshold(string shapeName)
     {

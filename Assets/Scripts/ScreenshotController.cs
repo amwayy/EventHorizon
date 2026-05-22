@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using DefaultNamespace;
+﻿using DefaultNamespace;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
@@ -38,8 +36,6 @@ public class ScreenshotController : MonoBehaviour
     private readonly RenderTexture[] _seedBuffers = new RenderTexture[2];
     private RenderTexture _originalMask;
     private Camera _cam;
-    private int _viewportWidth = 480;
-    private int _viewportHeight = 270;
 
     private void Awake()
     {
@@ -52,45 +48,41 @@ public class ScreenshotController : MonoBehaviour
         {
             Destroy(gameObject);
         }
-        
-        Screen.fullScreenMode = FullScreenMode.ExclusiveFullScreen;
-        Screen.SetResolution(480, 270, true);
     }
 
     private void Start()
     {
         _cam = Camera.main;
         
-        OnResolutionChanged();
+        Screen.fullScreenMode = FullScreenMode.Windowed;
+        
+        InitTextures();
     }
 
-    public void OnResolutionChanged()
+    private void InitTextures()
     {
-        _viewportWidth = Screen.width;
-        _viewportHeight = Screen.height;
-
         _screenCapture?.Release();
-        _screenCapture = new RenderTexture(_viewportWidth, _viewportHeight, 24, RenderTextureFormat.ARGB32);
+        _screenCapture = new RenderTexture(Configs.ViewportWidth, Configs.ViewportHeight, 24, RenderTextureFormat.ARGB32);
         _screenCapture.enableRandomWrite = true;
         _screenCapture.Create();
 
         _maskTexture?.Release();
-        _maskTexture = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
+        _maskTexture = new RenderTexture(Configs.ViewportWidth, Configs.ViewportHeight, 0, RenderTextureFormat.RFloat);
         _maskTexture.enableRandomWrite = true;
         _maskTexture.Create();
 
         _seedBuffers[0]?.Release();
-        _seedBuffers[0] = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
+        _seedBuffers[0] = new RenderTexture(Configs.ViewportWidth, Configs.ViewportHeight, 0, RenderTextureFormat.RFloat);
         _seedBuffers[0].enableRandomWrite = true;
         _seedBuffers[0].Create();
 
         _seedBuffers[1]?.Release();
-        _seedBuffers[1] = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
+        _seedBuffers[1] = new RenderTexture(Configs.ViewportWidth, Configs.ViewportHeight, 0, RenderTextureFormat.RFloat);
         _seedBuffers[1].enableRandomWrite = true;
         _seedBuffers[1].Create();
 
         _originalMask?.Release();
-        _originalMask = new RenderTexture(_viewportWidth, _viewportHeight, 0, RenderTextureFormat.RFloat);
+        _originalMask = new RenderTexture(Configs.ViewportWidth, Configs.ViewportHeight, 0, RenderTextureFormat.RFloat);
         _originalMask.enableRandomWrite = true;
         _originalMask.Create();
     }
@@ -117,8 +109,7 @@ public class ScreenshotController : MonoBehaviour
         {
             ClearPreviousOutline();
             
-            Vector2 mousePos = Input.mousePosition;
-            DoColorFloodFill(mousePos);
+            DoColorFloodFill(GameManager.Instance.GetViewportMousePosition());
         }
     }
 
@@ -172,7 +163,7 @@ public class ScreenshotController : MonoBehaviour
     {
         var isOnSlot = false;
         
-        var ray = _cam.ScreenPointToRay(Input.mousePosition);
+        var ray = _cam.ScreenPointToRay(GameManager.Instance.GetViewportMousePosition());
         GameObject hitGameObject = null;
         var layerMask = LayerMask.GetMask("Collective") | LayerMask.GetMask("Cuttable");
         JigsawSO[] templateJigsawSos = null;
@@ -221,7 +212,7 @@ public class ScreenshotController : MonoBehaviour
             capturedRegionRT.Release();
 
             var bBoxCenter = shapeComparor.GetBBoxCenter();
-            var color = GetColorFromRT(_screenCapture, Input.mousePosition);
+            var color = GetColorFromRT(_screenCapture, GameManager.Instance.GetViewportMousePosition());
             EventComponent.Instance.Fire(this,
                 CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color, hitGameObject));
             
@@ -232,14 +223,17 @@ public class ScreenshotController : MonoBehaviour
 
     private void DoColorFloodFill(Vector2 position)
     {
+        var originalRt = _cam.targetTexture;
         _cam.targetTexture = _screenCapture;
         _cam.Render();
-        _cam.targetTexture = null;
+        _cam.targetTexture = originalRt;
         
         FloodFillGPU(position);
 
         hoverOutlineMaterial.SetTexture(FloodFillMask, _maskTexture);
-        hoverOutlineMaterial.SetVector(FloodFillMaskTexelSize, new Vector4(1.0f / _viewportWidth, 1.0f / _viewportHeight, _viewportWidth, _viewportHeight));
+        hoverOutlineMaterial.SetVector(FloodFillMaskTexelSize, 
+            new Vector4(1.0f / Configs.ViewportWidth, 1.0f / Configs.ViewportHeight, 
+                Configs.ViewportWidth, Configs.ViewportHeight));
         hoverOutlineMaterial.SetInt(OutlineWidth, outlineWidth);
         hoverOutlineMaterial.SetColor(OutlineColor, outlineColor);
     }
@@ -247,8 +241,8 @@ public class ScreenshotController : MonoBehaviour
     private Color GetColorFromRT(RenderTexture rt, Vector2 mousePos)
     {
         // 👉 屏幕坐标 → RT坐标
-        int x = Mathf.Clamp((int)(mousePos.x / Screen.width * rt.width), 0, rt.width - 1);
-        int y = Mathf.Clamp((int)(mousePos.y / Screen.height * rt.height), 0, rt.height - 1);
+        int x = Mathf.Clamp((int)(mousePos.x / Configs.ViewportWidth * rt.width), 0, rt.width - 1);
+        int y = Mathf.Clamp((int)(mousePos.y / Configs.ViewportHeight * rt.height), 0, rt.height - 1);
 
         RenderTexture current = RenderTexture.active;
         RenderTexture.active = rt;
@@ -276,11 +270,13 @@ public class ScreenshotController : MonoBehaviour
         floodFillShader.SetTexture(initKernel, OriginalMask, _originalMask);
         floodFillShader.SetVector(SeedPos, seedPos);
         floodFillShader.SetFloat(Tolerance, tolerance);
-        floodFillShader.SetInts(TexSize, _viewportWidth, _viewportHeight);
-        floodFillShader.Dispatch(initKernel, Mathf.CeilToInt(_viewportWidth / 8f), Mathf.CeilToInt(_viewportHeight / 8f), 1);
+        floodFillShader.SetInts(TexSize, Configs.ViewportWidth, Configs.ViewportHeight);
+        floodFillShader.Dispatch(initKernel, 
+            Mathf.CeilToInt(Configs.ViewportWidth / 8f), 
+            Mathf.CeilToInt(Configs.ViewportHeight / 8f), 1);
 
         // Wavefront propagation: max iterations = max dimension (worst case: diagonal)
-        var maxDim = Mathf.Max(_viewportWidth, _viewportHeight);
+        var maxDim = Mathf.Max(Configs.ViewportWidth, Configs.ViewportHeight);
         var read = 0;
 
         for (var i = 0; i < maxDim; i++)
@@ -290,14 +286,18 @@ public class ScreenshotController : MonoBehaviour
             floodFillShader.SetTexture(propagateKernel, SeedsIn, _seedBuffers[read]);
             floodFillShader.SetTexture(propagateKernel, SeedsOut, _seedBuffers[write]);
             floodFillShader.SetTexture(propagateKernel, OriginalMask, _originalMask);
-            floodFillShader.Dispatch(propagateKernel, Mathf.CeilToInt(_viewportWidth / 8f), Mathf.CeilToInt(_viewportHeight / 8f), 1);
+            floodFillShader.Dispatch(propagateKernel, 
+                Mathf.CeilToInt(Configs.ViewportWidth / 8f), 
+                Mathf.CeilToInt(Configs.ViewportHeight / 8f), 1);
 
             read = write;
         }
 
         floodFillShader.SetTexture(maskKernel, SeedsIn, _seedBuffers[read]);
         floodFillShader.SetTexture(maskKernel, Mask, _maskTexture);
-        floodFillShader.Dispatch(maskKernel, Mathf.CeilToInt(_viewportWidth / 8f), Mathf.CeilToInt(_viewportHeight / 8f), 1);
+        floodFillShader.Dispatch(maskKernel, 
+            Mathf.CeilToInt(Configs.ViewportWidth / 8f), 
+            Mathf.CeilToInt(Configs.ViewportHeight / 8f), 1);
     }
 
     public void ToggleScreenshotState()

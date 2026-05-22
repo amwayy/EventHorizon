@@ -102,7 +102,7 @@ public class JigsawCollective : MonoBehaviour
         {
             var isHit = RectTransformUtility.RectangleContainsScreenPoint(
                 uiPart,
-                Input.mousePosition,
+                GameManager.Instance.GetViewportMousePosition(),
                 canvas.worldCamera
             );
             if (isHit)
