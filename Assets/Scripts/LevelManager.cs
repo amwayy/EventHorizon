@@ -43,7 +43,7 @@ public class LevelManager : MonoBehaviour
         TeleportPlayerToLevel(CurrentLevelIndex);
     }
 
-    public void TeleportPlayerToLevel(int levelId)
+    private void TeleportPlayerToLevel(int levelId)
     {
         var level = GetLevel(levelId);
         OnEnterLevelInternal(levelId);
