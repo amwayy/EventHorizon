@@ -275,6 +275,7 @@ public class JigsawUI : MonoBehaviour,
 
     public bool IsOriginalShape()
     {
+        if (!_visibleAreaJigsawData.Source) return false;
         return _originalJigsawData.Source.jigsawName == _visibleAreaJigsawData.Source.jigsawName &&
                _originalJigsawData.RotateAngle == _visibleAreaJigsawData.RotateAngle;
     }

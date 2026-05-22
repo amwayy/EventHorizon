@@ -28,7 +28,7 @@ Material:
     - _Angle: 43
     - _Density: 7
     - _Size: 0.081
-    - _Width: 0.1
+    - _Width: 0.25
     m_Colors:
     - _ColorA: {r: 0, g: 0, b: 0, a: 1}
     - _ColorB: {r: 1, g: 1, b: 1, a: 1}

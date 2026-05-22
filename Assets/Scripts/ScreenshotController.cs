@@ -130,7 +130,7 @@ public class ScreenshotController : MonoBehaviour
             if (hoveringJigsawUI)
             {
                 hoveringJigsawUI.UpdateVisibleArea(clearOutline: false);
-                if (hoveringJigsawUI.IsOriginalShape() && hoveringJigsawUI.ConnectedJigsaws.Count == 0) return;
+                if (hoveringJigsawUI.IsOriginalShape() || hoveringJigsawUI.ConnectedJigsaws.Count > 0) return;
             }
                 
             TryCaptureMouseRegion();
