@@ -318,7 +318,7 @@ namespace DefaultNamespace
             foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
             {
                 if (!collectedJigsawUI.gameObject.activeSelf) continue;
-                collectedJigsawUI.UpdateVisibleArea();
+                collectedJigsawUI.UpdateUIVisibleArea();
                 if (collectedJigsawUI == jigsawUI) continue;
 
                 if (collectedJigsawUI.ConnectedJigsaws.Contains(jigsawUI))
@@ -335,11 +335,15 @@ namespace DefaultNamespace
                 
                 if (Utility.IsSameColor(jigsawUI.Color, collectedJigsawUI.Color))
                 {
-                    jigsawUI.MarkBlocked(false);
-                    collectedJigsawUI.MarkBlocked(false);
-                    
-                    jigsawUI.ConnectedJigsaws.Add(collectedJigsawUI);
-                    collectedJigsawUI.ConnectedJigsaws.Add(jigsawUI);
+                    var iou = Utility.IoU(collectedJigsawRect, draggingJigsawRect);
+                    if (iou > 0.2f)
+                    {
+                        jigsawUI.MarkBlocked(false);
+                        collectedJigsawUI.MarkBlocked(false);
+
+                        jigsawUI.ConnectedJigsaws.Add(collectedJigsawUI);
+                        collectedJigsawUI.ConnectedJigsaws.Add(jigsawUI);
+                    }
                 }
                 else
                 {

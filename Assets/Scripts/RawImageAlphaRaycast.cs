@@ -117,11 +117,11 @@ public class RawImageAlphaRaycast : MonoBehaviour, ICanvasRaycastFilter
     {
         result = Vector2.zero;
         var texture = _rawImage.texture;
-        if (texture == null)
+        if (!texture)
             return false;
 
         var canvas = _rawImage.canvas;
-        if (canvas == null)
+        if (!canvas)
             return false;
 
         var eventCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
@@ -179,11 +179,10 @@ public class RawImageAlphaRaycast : MonoBehaviour, ICanvasRaycastFilter
     private bool IsPointBlocked(Vector2 screenPoint)
     {
         var canvas = _rawImage.canvas;
-        if (canvas == null)
+        if (!canvas)
             return false;
 
-        var raycaster = canvas.GetComponent<GraphicRaycaster>();
-        if (raycaster == null)
+        if (!canvas.TryGetComponent(out GraphicRaycaster raycaster))
             return false;
 
         var eventData = new PointerEventData(EventSystem.current)

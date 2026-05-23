@@ -104,32 +104,38 @@ public class ScreenshotController : MonoBehaviour
         {
             ToggleScreenshotState();
         }
-
-        if (IsInScreenshot && !isInMenu)
-        {
-            ClearPreviousOutline();
-            
-            DoColorFloodFill(GameManager.Instance.GetViewportMousePosition());
-        }
     }
 
     private void LateUpdate()
     {
-        if (IsInScreenshot && !GameManager.Instance.IsInMenu && Input.GetMouseButtonUp(0))
+        if (IsInScreenshot && !GameManager.Instance.IsInMenu)
         {
-            var hoveringJigsawUI = Utility.GetHoveringJigsawUI();
-            if (hoveringJigsawUI)
+            ClearPreviousOutline();
+            
+            DoColorFloodFill(GameManager.Instance.GetViewportMousePosition());
+
+            if (Input.GetMouseButtonUp(0))
             {
-                hoveringJigsawUI.UpdateVisibleArea(clearOutline: false);
-                if (hoveringJigsawUI.IsOriginalShape() || hoveringJigsawUI.ConnectedJigsaws.Count > 0) return;
-            }
+                var hoveringJigsawUI = Utility.GetHoveringJigsawUI();
+                if (hoveringJigsawUI)
+                {
+                    if (hoveringJigsawUI.IsOriginalShape() || hoveringJigsawUI.ConnectedJigsaws.Count > 0) return;
+                }
                 
-            TryCaptureMouseRegion();
+                TryCaptureMouseRegion();   
+            }
         }
     }
 
-    public JigsawRuntimeData GetSameColorRegionShape(Vector2 position, out Rect rect, out RenderTexture rt, bool clearOutline)
+    public JigsawRuntimeData GetSameColorRegionShape(Vector2 position, out Rect rect, out RenderTexture rt,
+        bool clearOutline, LayerMask layer = default)
     {
+        var originalCullingMask = _cam.cullingMask;
+        if (layer != 0)
+        {
+            _cam.cullingMask = layer;   
+        }
+        
         rect = Rect.zero;
         rt = null;
         DoColorFloodFill(position);
@@ -138,6 +144,7 @@ public class ScreenshotController : MonoBehaviour
             var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle,
                 out var jigsawData, out var capturedRegionRT, releaseRt: false);
             var bboxCenter = shapeComparor.GetBBoxCenter();
+            if (!capturedRegionRT) continue;
             rect = new Rect(
                 bboxCenter.x - capturedRegionRT.width / 2f,  bboxCenter.y - capturedRegionRT.height / 2f, 
                 capturedRegionRT.width, capturedRegionRT.height);
@@ -147,12 +154,16 @@ public class ScreenshotController : MonoBehaviour
             {
                 ClearPreviousOutline();   
             }
+            _cam.cullingMask = originalCullingMask;
             return Utility.Rotate(jigsawData, angle);
         }
         if (clearOutline)
         {
             ClearPreviousOutline();   
         }
+        
+        _cam.cullingMask = originalCullingMask;
+        
         return new JigsawRuntimeData
         {
             Source = null,

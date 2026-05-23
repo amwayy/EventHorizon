@@ -17,12 +17,7 @@ public struct JigsawRuntimeData
     public JigsawSO Source;
 }
 
-public class JigsawUI : MonoBehaviour,
-    IPointerEnterHandler,
-    IPointerExitHandler,
-    IBeginDragHandler,
-    IDragHandler,
-    IEndDragHandler
+public class JigsawUI : MonoBehaviour
 {
     [SerializeField] private JigsawDatabase jigsawDatabase;
     [SerializeField] private RawImage rawImage;
@@ -31,6 +26,7 @@ public class JigsawUI : MonoBehaviour,
     public RectTransform RectTransform => _rectTransform;
     public Color Color => rawImage.color;
     public readonly List<JigsawUI> ConnectedJigsaws = new();
+    public Rect VisibleRect { get; private set; }
     
     private int _openHandCursorId;
     private int _closeHandCursorId;
@@ -46,9 +42,11 @@ public class JigsawUI : MonoBehaviour,
     private bool _hitSlotInFront;
     private RawImageAlphaRaycast _rawImageHandler;
     private JigsawRuntimeData _visibleAreaJigsawData;
-    private Rect _visibleRect;
     private RenderTexture _visiblePartRt;
     private bool _isBlocked;
+    
+    private bool _isDragging;
+    private bool _mouseDown;
 
     private void Awake()
     {
@@ -61,6 +59,9 @@ public class JigsawUI : MonoBehaviour,
 
     private void Update()
     {
+        HandleHover();
+        HandleDrag();
+        
         var screenPos = _mainCamera.WorldToScreenPoint(_rectTransform.position);
         var ray = _mainCamera.ScreenPointToRay(screenPos);
         if (!Physics.Raycast(ray, out var hit) || !hit.collider.TryGetComponent(out JigsawSlot slot))
@@ -74,6 +75,44 @@ public class JigsawUI : MonoBehaviour,
             TryPutOnSlot();
         }
     }
+    
+    private void HandleHover()
+    {
+        Vector2 mousePos = GameManager.Instance.GetViewportMousePosition();
+        var isInside = _rawImageHandler.IsRaycastLocationValid(mousePos, _canvas.worldCamera);
+
+        if (isInside && !_isHovering)
+        {
+            OnPointerEnter();
+        }
+        else if (!isInside && _isHovering)
+        {
+            OnPointerExit();
+        }
+    }
+    
+    private void HandleDrag()
+    {
+        if (Input.GetMouseButtonDown(0) && _isHovering)
+        {
+            _isDragging = true;
+            OnBeginDrag();
+        }
+
+        if (_isDragging)
+        {
+            OnDrag();
+        }
+
+        if ((Input.GetMouseButtonUp(0) || Input.GetMouseButtonDown(1)) && _isDragging)
+        {
+            _isDragging = false;
+
+            CursorStack.Pop(_closeHandCursorId);
+
+            OnEndDrag();
+        }
+    }
 
     public void Init(CapturedJigsawEventArgs args)
     {
@@ -85,22 +124,22 @@ public class JigsawUI : MonoBehaviour,
         _angle = args.Angle;
         _originalJigsawData = Utility.Rotate(args.JigsawData, args.Angle);
         _visibleAreaJigsawData = _originalJigsawData;
-        _visibleRect = Utility.GetUIRectScreenRect(_rectTransform, _mainCamera);
+        VisibleRect = Utility.GetUIRectScreenRect(_rectTransform, _mainCamera);
     }
 
-    public void OnPointerEnter(PointerEventData eventData)
+    private void OnPointerEnter()
     {
         _isHovering = true;
         _openHandCursorId = CursorStack.Push(NTCursors.OpenHand);
     }
 
-    public void OnPointerExit(PointerEventData eventData)
+    private void OnPointerExit()
     {
         _isHovering = false;
         CursorStack.Pop(_openHandCursorId);
     }
 
-    public void OnBeginDrag(PointerEventData eventData)
+    private void OnBeginDrag()
     {
         if (!_isHovering) return;
 
@@ -112,7 +151,7 @@ public class JigsawUI : MonoBehaviour,
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _rectTransform.parent as RectTransform,
-            GameManager.Instance.GetViewportPosition(eventData.position),
+            GameManager.Instance.GetViewportMousePosition(),
             cam,
             out var localPoint
         );
@@ -120,7 +159,7 @@ public class JigsawUI : MonoBehaviour,
         _dragOffset = _rectTransform.anchoredPosition - localPoint;
     }
 
-    public void OnDrag(PointerEventData eventData)
+    private void OnDrag()
     {
         var cam = _canvas.renderMode == RenderMode.ScreenSpaceOverlay
             ? null
@@ -128,7 +167,7 @@ public class JigsawUI : MonoBehaviour,
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _rectTransform.parent as RectTransform,
-            GameManager.Instance.GetViewportPosition(eventData.position),
+            GameManager.Instance.GetViewportMousePosition(),
             cam,
             out var localPoint
         );
@@ -145,7 +184,7 @@ public class JigsawUI : MonoBehaviour,
         _hitSlotInFront = Vector3.Dot(hit.collider.transform.forward, ray.direction) < 0;
     }
 
-    public void OnEndDrag(PointerEventData eventData)
+    private void OnEndDrag()
     {
         CursorStack.Pop(_closeHandCursorId);
         
@@ -154,11 +193,11 @@ public class JigsawUI : MonoBehaviour,
         var jigsawRect = Utility.GetUIRectScreenRect(_rectTransform, _mainCamera);
         if (Utility.IsNotFullyInsideScreen(jigsawRect))
         {
-            UpdateVisibleArea();
+            UpdateUIVisibleArea();
         }
         if (!_isBlocked && ConnectedJigsaws.Count == 0)
         {
-            _visibleRect = jigsawRect;
+            VisibleRect = jigsawRect;
             _visibleAreaJigsawData = _originalJigsawData;
         }
         if (!_hoveringSlot) return;
@@ -175,12 +214,13 @@ public class JigsawUI : MonoBehaviour,
         _isBlocked = isBlocked;
     }
 
-    public void UpdateVisibleArea(bool clearOutline = true)
+    public void UpdateUIVisibleArea()
     {
         if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return;
+        var layerMask = LayerMask.GetMask("UI");
         _visibleAreaJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(
-            visiblePosition, out var rect, out var rt, clearOutline: clearOutline);
-        _visibleRect = rect;
+            visiblePosition, out var rect, out var rt, clearOutline: true, layerMask);
+        VisibleRect = rect;
         
         _visiblePartRt?.Release();
         _visiblePartRt = new RenderTexture(rt.width, rt.height, 0, RenderTextureFormat.ARGB32);
@@ -197,7 +237,7 @@ public class JigsawUI : MonoBehaviour,
     {
         if (!_visibleAreaJigsawData.Source) return false;
         var slotRect = Utility.GetUIRectScreenRect(_hoveringSlot.RectTransform, _mainCamera);
-        var jigsawRect = Utility.GetJigsawCoreRect(_visibleRect, _visibleAreaJigsawData.Source, _angle);
+        var jigsawRect = Utility.GetJigsawCoreRect(VisibleRect, _visibleAreaJigsawData.Source, _angle);
         var iou = Utility.IoU(slotRect, jigsawRect);
 
         if (Mathf.Abs(iou - 1) > 0.15f)
@@ -275,8 +315,11 @@ public class JigsawUI : MonoBehaviour,
 
     public bool IsOriginalShape()
     {
-        if (!_visibleAreaJigsawData.Source) return false;
-        return _originalJigsawData.Source.jigsawName == _visibleAreaJigsawData.Source.jigsawName &&
-               _originalJigsawData.RotateAngle == _visibleAreaJigsawData.RotateAngle;
+        if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return false;
+        var visibleJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(
+            visiblePosition, out _, out _, clearOutline: false);
+        if (!visibleJigsawData.Source) return false;
+        return _originalJigsawData.Source.jigsawName == visibleJigsawData.Source.jigsawName &&
+               _originalJigsawData.RotateAngle == visibleJigsawData.RotateAngle;
     }
 }
