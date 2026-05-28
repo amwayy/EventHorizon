@@ -364,7 +364,7 @@ public static class Utility
     
     public static bool IsNotFullyInsideScreen(Rect rect)
     {
-        var screen = new Rect(0, 0, Screen.width, Screen.height);
+        var screen = new Rect(0, 0, Configs.ViewportWidth, Configs.ViewportHeight);
         return !screen.Contains(rect.min) || !screen.Contains(rect.max);
     }
 }

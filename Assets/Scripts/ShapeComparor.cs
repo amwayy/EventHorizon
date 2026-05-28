@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using DefaultNamespace;
 using UnityEngine;
 
 public class ShapeComparor : MonoBehaviour
@@ -184,6 +185,12 @@ public class ShapeComparor : MonoBehaviour
         var meanRegion = sumRegion / count;
         var meanRef = sumRef / count;
 
+        if (meanRegion > 0.92f && meanRef > 0.92f)
+        {
+            // full square match
+            return Configs.GetShapeCompareThreshold(JigsawType.Square);
+        }
+        
         var numerator = sumProduct - count * meanRegion * meanRef;
         var denominator = Mathf.Sqrt((sumRegionSq - count * meanRegion * meanRegion) *
                                      (sumRefSq - count * meanRef * meanRef));

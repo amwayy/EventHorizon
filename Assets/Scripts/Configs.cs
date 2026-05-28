@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using DefaultNamespace;
+using UnityEngine;
 
 public static class Configs
 {
@@ -14,11 +16,23 @@ public static class Configs
     
     public const int ViewportHeight = 270;
 
+    public static readonly Dictionary<(int, int), SlotJigsawData> InitialPutJigsaws = new()
+    {
+        {(101, 1), new SlotJigsawData
+        {
+            CollectiveIndexes = new []{ (101, 1) },
+            RotationAngle = 180,
+            JigsawName = "1O",
+            JigsawColor = new Color(71 / 255f, 200 / 255f, 78 / 255f),
+        }}
+    };
+
     public static float GetShapeCompareThreshold(string shapeName)
     {
         return shapeName switch
         {
             "1I" => 0.75f,
+            "1O" => 0.9f,
             "I+O" => 0.95f,
             "I+O_Mirrored" => 0.95f,
             _ => 0.85f,

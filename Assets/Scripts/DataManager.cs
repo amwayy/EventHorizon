@@ -1,3 +1,4 @@
+using DefaultNamespace;
 using UnityEngine;
 
 public class DataManager : MonoBehaviour
@@ -7,6 +8,8 @@ public class DataManager : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        
+        InitPutJigsaws();
     }
 
     public bool HasKey(string dataKey)
@@ -44,5 +47,12 @@ public class DataManager : MonoBehaviour
     {
         var value = Load(dataKey, 0);
         Save(dataKey, value - 1);
+    }
+
+    private void InitPutJigsaws()
+    {
+        if (HasKey(DataKey.PutJigsaws)) return;
+        
+        Save(DataKey.PutJigsaws, Configs.InitialPutJigsaws);
     }
 }

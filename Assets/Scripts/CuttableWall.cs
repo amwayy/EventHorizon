@@ -80,6 +80,7 @@ namespace DefaultNamespace
                 DataManager.Instance.Load(DataKey.PutJigsaws, new Dictionary<(int, int), SlotJigsawData>());
             foreach (var (_, jigsawData) in putJigsaws)
             {
+                if (jigsawData.WallCollectiveDataArray == null) continue;
                 foreach (var wallCollectiveData in jigsawData.WallCollectiveDataArray)
                 {
                     if (wallCollectiveData.LevelId == levelId &&

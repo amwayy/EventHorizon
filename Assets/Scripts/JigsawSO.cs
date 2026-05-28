@@ -10,4 +10,5 @@ public class JigsawSO : ScriptableObject
     public JigsawEdgeType rightEdgeType;
     public Texture2D texture;
     public GameObject prefab;
+    public bool canCapture = true;
 }

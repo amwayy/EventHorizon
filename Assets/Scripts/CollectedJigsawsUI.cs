@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,11 +41,13 @@ namespace DefaultNamespace
             _mainCamera = Camera.main;
             
             EventComponent.Instance.Subscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
+            EventComponent.Instance.Subscribe(ScreenshotModeToggleEventArgs.EventId, OnToggleScreenshotMode);
         }
 
         private void OnDestroy()
         {
             EventComponent.Instance.Unsubscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
+            EventComponent.Instance.Unsubscribe(ScreenshotModeToggleEventArgs.EventId, OnToggleScreenshotMode);
             _resultsBuffer?.Release();
         }
 
@@ -336,7 +339,7 @@ namespace DefaultNamespace
                 if (Utility.IsSameColor(jigsawUI.Color, collectedJigsawUI.Color))
                 {
                     var iou = Utility.IoU(collectedJigsawRect, draggingJigsawRect);
-                    if (iou > 0.2f)
+                    if (iou > 0f)
                     {
                         jigsawUI.MarkBlocked(false);
                         collectedJigsawUI.MarkBlocked(false);
@@ -364,6 +367,24 @@ namespace DefaultNamespace
         private void HideJigsaw(JigsawUI jigsawUI)
         {
             jigsawUI.Hide();
+        }
+
+        private void OnToggleScreenshotMode(object sender, GameEventArgs eventArgs)
+        {
+            if (ScreenshotController.Instance.IsInScreenshot) return;
+
+            StartCoroutine(DelayUpdateCollectionShapes());
+        }
+
+        private IEnumerator DelayUpdateCollectionShapes()
+        {
+            yield return new WaitForEndOfFrame();
+            
+            foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
+            {
+                if (!collectedJigsawUI.gameObject.activeSelf) continue;
+                collectedJigsawUI.UpdateUIVisibleArea();
+            }
         }
     }
 }

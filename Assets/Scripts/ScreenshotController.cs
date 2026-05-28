@@ -119,7 +119,7 @@ public class ScreenshotController : MonoBehaviour
                 var hoveringJigsawUI = Utility.GetHoveringJigsawUI();
                 if (hoveringJigsawUI)
                 {
-                    if (hoveringJigsawUI.IsOriginalShape() || hoveringJigsawUI.ConnectedJigsaws.Count > 0) return;
+                    if (!hoveringJigsawUI.IsConnectedWithWorld()) return;
                 }
                 
                 TryCaptureMouseRegion();   
@@ -128,7 +128,7 @@ public class ScreenshotController : MonoBehaviour
     }
 
     public JigsawRuntimeData GetSameColorRegionShape(Vector2 position, out Rect rect, out RenderTexture rt,
-        bool clearOutline, LayerMask layer = default)
+        out int targetAngle, bool clearOutline, LayerMask layer = default)
     {
         var originalCullingMask = _cam.cullingMask;
         if (layer != 0)
@@ -138,6 +138,7 @@ public class ScreenshotController : MonoBehaviour
         
         rect = Rect.zero;
         rt = null;
+        targetAngle = 0;
         DoColorFloodFill(position);
         for (var angle = 0; angle < 360; angle += 90)
         {
@@ -149,6 +150,7 @@ public class ScreenshotController : MonoBehaviour
                 bboxCenter.x - capturedRegionRT.width / 2f,  bboxCenter.y - capturedRegionRT.height / 2f, 
                 capturedRegionRT.width, capturedRegionRT.height);
             rt = capturedRegionRT;
+            targetAngle = angle;
             if (!isShapeMatched) continue;
             if (clearOutline)
             {
@@ -200,6 +202,7 @@ public class ScreenshotController : MonoBehaviour
             var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle, 
                 out var jigsawData, out var capturedRegionRT, templateSos: templateJigsawSos);
             if (!isShapeMatched) continue;
+            if (!jigsawData.canCapture) continue;
             
             ToggleScreenshotState();
 

@@ -76,6 +76,8 @@ public class Level: MonoBehaviour
         {
             jigsawBoard.ClearJigsaws();   
         }
+        
+        LevelManager.Instance.TeleportPlayerToLevel(levelIndex);
     }
 
     public void ResetCollective(int index, bool sendNotification)

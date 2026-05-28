@@ -193,6 +193,7 @@ public class JigsawUI : MonoBehaviour
         var jigsawRect = Utility.GetUIRectScreenRect(_rectTransform, _mainCamera);
         if (Utility.IsNotFullyInsideScreen(jigsawRect))
         {
+            MarkBlocked(true);
             UpdateUIVisibleArea();
         }
         if (!_isBlocked && ConnectedJigsaws.Count == 0)
@@ -219,8 +220,9 @@ public class JigsawUI : MonoBehaviour
         if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return;
         var layerMask = LayerMask.GetMask("UI");
         _visibleAreaJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(
-            visiblePosition, out var rect, out var rt, clearOutline: true, layerMask);
+            visiblePosition, out var rect, out var rt, out var angle, clearOutline: true, layerMask);
         VisibleRect = rect;
+        _angle = angle;
         
         _visiblePartRt?.Release();
         _visiblePartRt = new RenderTexture(rt.width, rt.height, 0, RenderTextureFormat.ARGB32);
@@ -313,13 +315,16 @@ public class JigsawUI : MonoBehaviour
         return hasVisiblePoint;
     }
 
-    public bool IsOriginalShape()
+    public bool IsConnectedWithWorld()
     {
         if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return false;
         var visibleJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(
-            visiblePosition, out _, out _, clearOutline: false);
-        if (!visibleJigsawData.Source) return false;
-        return _originalJigsawData.Source.jigsawName == visibleJigsawData.Source.jigsawName &&
-               _originalJigsawData.RotateAngle == visibleJigsawData.RotateAngle;
+            visiblePosition, out _, out _, out _, clearOutline: true);
+        var uiVisibleJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(
+            visiblePosition, out _, out _, out _, clearOutline: false, layer: LayerMask.GetMask("UI"));
+        // we only care about jigsaw shapes, ignore non-jigsaw shapes 
+        if (!visibleJigsawData.Source || !uiVisibleJigsawData.Source) return false;
+        return uiVisibleJigsawData.Source.jigsawName != visibleJigsawData.Source.jigsawName ||
+               uiVisibleJigsawData.RotateAngle != visibleJigsawData.RotateAngle;
     }
 }
