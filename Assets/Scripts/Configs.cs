@@ -22,14 +22,14 @@ public static class Configs
             CollectiveIndexes = new []{ (100, 1) },
             RotationAngle = 180,
             JigsawName = "1O",
-            JigsawColor = Colors.green,
+            JigsawColor = Colors.GetJigsawColor(ColorType.Green),
         }},
         {(101, 0), new SlotJigsawData
         {
             CollectiveIndexes = new []{ (101, 1) },
             RotationAngle = 0,
             JigsawName = "1I",
-            JigsawColor = Colors.green,
+            JigsawColor = Colors.GetJigsawColor(ColorType.Green),
         }},
     };
 

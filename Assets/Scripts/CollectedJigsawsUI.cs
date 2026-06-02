@@ -296,22 +296,25 @@ namespace DefaultNamespace
             }
         }
 
-        public void ResetCollection()
+        public void ResetCollection(Color exceptedColor)
         {
+            var jigsawUIsToRemove = new List<JigsawUI>();
             foreach (var (jigsawUI, collectives) in _collectedJigsaws)
             {
                 if (!jigsawUI.gameObject.activeSelf) continue;
+                if (Utility.IsSameColor(jigsawUI.Color, exceptedColor)) continue;
                 HideJigsaw(jigsawUI);
+                jigsawUIsToRemove.Add(jigsawUI);
+                jigsawUI.gameObject.SetActive(false);
                 foreach (var collective in collectives)
                 {
                     collective.ResetState(sendNotification: false);   
                 }
             }
 
-            _collectedJigsaws.Clear();
-            foreach (Transform jigsaw in transform)
+            foreach (var jigsawUI in jigsawUIsToRemove)
             {
-                jigsaw.gameObject.SetActive(false);
+                _collectedJigsaws.Remove(jigsawUI);
             }
         }
 

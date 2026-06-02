@@ -36,6 +36,6 @@ Material:
     - _Speed: 1
     - _Tiling: 1
     m_Colors:
-    - _Color: {r: 0.6, g: 0.19999996, b: 1, a: 1}
+    - _Color: {r: 1, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
