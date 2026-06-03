@@ -9,12 +9,18 @@ public class ShapeComparor : MonoBehaviour
     [SerializeField] private ComputeShader shapeCompareShader;
 
     private static ShapeComparor _instance;
-    private static readonly int RegionTex = Shader.PropertyToID("RegionTex");
-    private static readonly int ReferenceTex = Shader.PropertyToID("ReferenceTex");
+    private static readonly int SourceTex = Shader.PropertyToID("SourceTex");
+    private static readonly int EdgeTex = Shader.PropertyToID("EdgeTex");
+    private static readonly int EdgeOutput = Shader.PropertyToID("EdgeOutput");
+    private static readonly int DistanceField = Shader.PropertyToID("DistanceField");
+    private static readonly int RegionDistanceField = Shader.PropertyToID("RegionDistanceField");
+    private static readonly int ReferenceDistanceField = Shader.PropertyToID("ReferenceDistanceField");
+    private static readonly int RegionEdge = Shader.PropertyToID("RegionEdge");
+    private static readonly int ReferenceEdge = Shader.PropertyToID("ReferenceEdge");
     private static readonly int Result = Shader.PropertyToID("Result");
     private static readonly int Width = Shader.PropertyToID("Width");
     private static readonly int Height = Shader.PropertyToID("Height");
-    private static readonly int SourceTex = Shader.PropertyToID("SourceTex");
+    private static readonly int StepSize = Shader.PropertyToID("StepSize");
     private static readonly int BoundingBox = Shader.PropertyToID("BoundingBox");
     private static readonly int SourceWidth = Shader.PropertyToID("SourceWidth");
     private static readonly int SourceHeight = Shader.PropertyToID("SourceHeight");
@@ -26,7 +32,15 @@ public class ShapeComparor : MonoBehaviour
     private static readonly int CenterX = Shader.PropertyToID("CenterX");
     private static readonly int CenterY = Shader.PropertyToID("CenterY");
 
-    private Dictionary<RenderTexture, JigsawSO> _normalizedReferenceRTs = new();
+    private class ReferenceData
+    {
+        public RenderTexture normalizedRT;
+        public RenderTexture edgeRT;
+        public RenderTexture distanceFieldRT;
+        public JigsawSO jigsawSO;
+    }
+
+    private List<ReferenceData> _referenceData = new();
     private ComputeBuffer _resultBuffer;
     private Material _blitMaterial;
     private Vector2Int _bBoxCenter = new();
@@ -46,17 +60,19 @@ public class ShapeComparor : MonoBehaviour
 
     private void Start()
     {
-        _resultBuffer = new ComputeBuffer(5, sizeof(uint));
-        
+        _resultBuffer = new ComputeBuffer(1, sizeof(float));
+
         ComputeReferenceMoments();
     }
 
     private void OnDestroy()
     {
         _resultBuffer?.Release();
-        foreach (var renderTexture in _normalizedReferenceRTs.Keys)
+        foreach (var data in _referenceData)
         {
-            renderTexture.Release();
+            data.normalizedRT?.Release();
+            data.edgeRT?.Release();
+            data.distanceFieldRT?.Release();
         }
         if (_blitMaterial != null)
             Destroy(_blitMaterial);
@@ -74,25 +90,33 @@ public class ShapeComparor : MonoBehaviour
             refRT.enableRandomWrite = true;
             refRT.Create();
 
-            // Clear to black first
             RenderTexture.active = refRT;
             GL.Clear(true, true, Color.clear);
             RenderTexture.active = null;
 
-            // Enable alpha-aware mode: opaque pixels -> 1, transparent -> 0
             _blitMaterial.SetFloat("_AlphaAware", 1f);
             Graphics.Blit(referenceMask, refRT, _blitMaterial);
             _blitMaterial.SetFloat("_AlphaAware", 0f);
 
-            var rt = NormalizeRegion(refRT, 256, 256, out var croppedRT);
+            var normalizedRT = NormalizeRegion(refRT, 256, 256, out var croppedRT);
             croppedRT.Release();
-            _normalizedReferenceRTs[rt] = data;
+
+            var edgeRT = ExtractEdges(normalizedRT);
+            var distanceFieldRT = ComputeDistanceField(edgeRT, 256, 256);
+
+            _referenceData.Add(new ReferenceData
+            {
+                normalizedRT = normalizedRT,
+                edgeRT = edgeRT,
+                distanceFieldRT = distanceFieldRT,
+                jigsawSO = data
+            });
 
             refRT.Release();
         }
     }
 
-    private float CompareShape(RenderTexture regionMask, int rotateAngle, 
+    private float GetShapeDistance(RenderTexture regionMask, int rotateAngle,
         out JigsawSO targetJigsawData, out RenderTexture croppedRT, JigsawSO[] templateJigsawSos)
     {
         var normalizedRegion = NormalizeRegion(regionMask, 256, 256, out croppedRT);
@@ -105,26 +129,39 @@ public class ShapeComparor : MonoBehaviour
             normalizedRegion.Release();
         }
 
-        var maxSimilarity = 0f;
+        var regionEdge = ExtractEdges(rotatedRegion);
+        var regionDistanceField = ComputeDistanceField(regionEdge, 256, 256);
+
+        var minDistance = float.MaxValue;
         targetJigsawData = null;
 
-        foreach (var (referenceRT, data) in _normalizedReferenceRTs)
+        foreach (var refData in _referenceData)
         {
-            if (templateJigsawSos != null && templateJigsawSos.Length > 0 && !templateJigsawSos.Contains(data))
+            if (templateJigsawSos != null && templateJigsawSos.Length > 0 && !templateJigsawSos.Contains(refData.jigsawSO))
             {
                 continue;
             }
-            var similarity = CompareTemplates(rotatedRegion, referenceRT);
-            // Debug.Log($"similarity between {data.jigsawName} (angle {rotateAngle}): {similarity}");
-            if (similarity > maxSimilarity)
+
+            var distance = ComputeChamferDistance(regionDistanceField, refData.distanceFieldRT,
+                regionEdge, refData.edgeRT);
+            
+            // // ------ debug ------
+            // var tempSimilarity = 1f / (1f + distance * 0.01f);
+            // Debug.Log($"ref jigsaw type: {refData.jigsawSO.jigsawName}; rotate angle: {rotateAngle}; distance: {distance}; similarity: {tempSimilarity}");
+            // // ------ debug ------
+
+            if (distance < minDistance)
             {
-                maxSimilarity = similarity;
-                targetJigsawData = data;
+                minDistance = distance;
+                targetJigsawData = refData.jigsawSO;
             }
         }
-        rotatedRegion.Release();
 
-        return maxSimilarity;
+        rotatedRegion.Release();
+        regionEdge.Release();
+        regionDistanceField.Release();
+
+        return minDistance;
     }
 
     private RenderTexture RotateTexture(RenderTexture source, float angle)
@@ -148,59 +185,77 @@ public class ShapeComparor : MonoBehaviour
         return rotated;
     }
 
-    private float CompareTemplates(RenderTexture region, RenderTexture normalizedReferenceRT)
+    private RenderTexture ExtractEdges(RenderTexture source)
     {
-        if (!normalizedReferenceRT)
-            return 0f;
+        var edgeRT = new RenderTexture(source.width, source.height, 0, RenderTextureFormat.RFloat);
+        edgeRT.enableRandomWrite = true;
+        edgeRT.Create();
 
-        if (!shapeCompareShader)
+        var edgeKernel = shapeCompareShader.FindKernel("ExtractEdges");
+
+        shapeCompareShader.SetTexture(edgeKernel, SourceTex, source);
+        shapeCompareShader.SetTexture(edgeKernel, EdgeOutput, edgeRT);
+        shapeCompareShader.SetInt(Width, source.width);
+        shapeCompareShader.SetInt(Height, source.height);
+
+        shapeCompareShader.Dispatch(edgeKernel, Mathf.CeilToInt(source.width / 8f), Mathf.CeilToInt(source.height / 8f), 1);
+
+        return edgeRT;
+    }
+
+    private RenderTexture ComputeDistanceField(RenderTexture edgeRT, int width, int height)
+    {
+        var distanceFieldRT = new RenderTexture(width, height, 0, RenderTextureFormat.RGFloat);
+        distanceFieldRT.enableRandomWrite = true;
+        distanceFieldRT.Create();
+
+        var initKernel = shapeCompareShader.FindKernel("JumpFloodInit");
+        shapeCompareShader.SetTexture(initKernel, EdgeTex, edgeRT);
+        shapeCompareShader.SetTexture(initKernel, DistanceField, distanceFieldRT);
+        shapeCompareShader.SetInt(Width, width);
+        shapeCompareShader.SetInt(Height, height);
+        shapeCompareShader.Dispatch(initKernel, Mathf.CeilToInt(width / 8f), Mathf.CeilToInt(height / 8f), 1);
+
+        var jfaKernel = shapeCompareShader.FindKernel("JumpFlood");
+        var maxDim = Mathf.Max(width, height);
+        var stepSize = Mathf.NextPowerOfTwo(maxDim) / 2;
+
+        while (stepSize >= 1)
         {
-            // Debug.LogError("ShapeCompareShader not assigned");
-            return 0f;
+            shapeCompareShader.SetTexture(jfaKernel, DistanceField, distanceFieldRT);
+            shapeCompareShader.SetInt(Width, width);
+            shapeCompareShader.SetInt(Height, height);
+            shapeCompareShader.SetInt(StepSize, stepSize);
+            shapeCompareShader.Dispatch(jfaKernel, Mathf.CeilToInt(width / 8f), Mathf.CeilToInt(height / 8f), 1);
+
+            stepSize /= 2;
         }
 
-        var kernel = shapeCompareShader.FindKernel("ComputeNCC");
+        return distanceFieldRT;
+    }
 
-        var clearData = new uint[5];
+    private float ComputeChamferDistance(RenderTexture regionDistanceField, RenderTexture referenceDistanceField,
+        RenderTexture regionEdge, RenderTexture referenceEdge)
+    {
+        var kernel = shapeCompareShader.FindKernel("ComputeChamferDistance");
+
+        var clearData = new float[1];
         _resultBuffer.SetData(clearData);
 
-        shapeCompareShader.SetTexture(kernel, RegionTex, region);
-        shapeCompareShader.SetTexture(kernel, ReferenceTex, normalizedReferenceRT);
+        shapeCompareShader.SetTexture(kernel, RegionDistanceField, regionDistanceField);
+        shapeCompareShader.SetTexture(kernel, ReferenceDistanceField, referenceDistanceField);
+        shapeCompareShader.SetTexture(kernel, RegionEdge, regionEdge);
+        shapeCompareShader.SetTexture(kernel, ReferenceEdge, referenceEdge);
         shapeCompareShader.SetBuffer(kernel, Result, _resultBuffer);
-        shapeCompareShader.SetInt(Width, region.width);
-        shapeCompareShader.SetInt(Height, region.height);
+        shapeCompareShader.SetInt(Width, regionDistanceField.width);
+        shapeCompareShader.SetInt(Height, regionDistanceField.height);
 
-        shapeCompareShader.Dispatch(kernel, Mathf.CeilToInt(region.width / 8f), Mathf.CeilToInt(region.height / 8f), 1);
+        shapeCompareShader.Dispatch(kernel, Mathf.CeilToInt(regionDistanceField.width / 8f), Mathf.CeilToInt(regionDistanceField.height / 8f), 1);
 
-        var results = new uint[5];
+        var results = new float[1];
         _resultBuffer.GetData(results);
 
-        var sumRegion = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[0]), 0);
-        var sumRef = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[1]), 0);
-        var sumRegionSq = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[2]), 0);
-        var sumRefSq = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[3]), 0);
-        var sumProduct = System.BitConverter.ToSingle(System.BitConverter.GetBytes(results[4]), 0);
-        var count = region.width * region.height;
-
-        var meanRegion = sumRegion / count;
-        var meanRef = sumRef / count;
-
-        if (meanRegion > 0.92f && meanRef > 0.92f)
-        {
-            // full square match
-            return Configs.GetShapeCompareThreshold(JigsawType.Square);
-        }
-        
-        var numerator = sumProduct - count * meanRegion * meanRef;
-        var denominator = Mathf.Sqrt((sumRegionSq - count * meanRegion * meanRegion) *
-                                     (sumRefSq - count * meanRef * meanRef));
-
-        var ncc = (denominator > 1e-10f) ? numerator / denominator : 0f;
-        var similarity = (ncc + 1f) / 2f;
-
-        // Debug.Log($"NCC: {ncc:F4}, Similarity: {similarity:F4}, sumRegion: {sumRegion:F2}, sumRef: {sumRef:F2}, count: {count}");
-
-        return similarity;
+        return results[0];
     }
 
     private RenderTexture NormalizeRegion(RenderTexture source, int targetWidth, int targetHeight, out RenderTexture croppedRT)
@@ -299,9 +354,8 @@ public class ShapeComparor : MonoBehaviour
     public bool IsShapeSimilar(RenderTexture regionMask, int rotateAngle,
         out JigsawSO jigsawData, out RenderTexture capturedRegionRT, bool releaseRt = true, JigsawSO[] templateSos = null)
     {
-        var similarity = CompareShape(regionMask, rotateAngle, out jigsawData, out capturedRegionRT, templateSos);
-        var similarityThreshold = Configs.GetShapeCompareThreshold(jigsawData.jigsawName);
-        var isSimilar = similarity >= similarityThreshold;
+        var distance = GetShapeDistance(regionMask, rotateAngle, out jigsawData, out capturedRegionRT, templateSos);
+        var isSimilar = distance < Configs.ShapeCompareDistanceThreshold;
         if (!isSimilar && releaseRt) capturedRegionRT?.Release();
         return isSimilar;
     }

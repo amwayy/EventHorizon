@@ -1,13 +1,21 @@
-#pragma kernel ComputeNCC
+#pragma kernel ExtractEdges
+#pragma kernel JumpFloodInit
+#pragma kernel JumpFlood
+#pragma kernel ComputeChamferDistance
 #pragma kernel ComputeBoundingBox
 #pragma kernel CropRegion
 #pragma kernel RotateTexture
 
-Texture2D<float> RegionTex;
-Texture2D<float> ReferenceTex;
 Texture2D<float> SourceTex;
+Texture2D<float> EdgeTex;
+Texture2D<float2> RegionDistanceField;
+Texture2D<float2> ReferenceDistanceField;
+Texture2D<float> RegionEdge;
+Texture2D<float> ReferenceEdge;
 RWTexture2D<float> CroppedTex;
 RWTexture2D<float> RotatedTex;
+RWTexture2D<float> EdgeOutput;
+RWTexture2D<float2> DistanceField;
 
 RWStructuredBuffer<uint> Result;
 RWStructuredBuffer<int> BoundingBox;
@@ -18,15 +26,12 @@ int SourceWidth;
 int SourceHeight;
 int MinX;
 int MinY;
+int StepSize;
 float RotationAngle;
 float CenterX;
 float CenterY;
 
-groupshared float sharedSumRegion[64];
-groupshared float sharedSumRef[64];
-groupshared float sharedSumRegionSq[64];
-groupshared float sharedSumRefSq[64];
-groupshared float sharedSumProduct[64];
+groupshared float sharedDistance[64];
 
 groupshared int sharedMinX[64];
 groupshared int sharedMinY[64];
@@ -51,98 +56,173 @@ void AtomicAddFloat(uint index, float value)
 }
 
 [numthreads(8,8,1)]
-void ComputeNCC(uint3 id : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupThreadID)
+void ExtractEdges(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)Width || id.y >= (uint)Height)
+        return;
+
+    float center = SourceTex[id.xy];
+
+    if (center < 0.5)
+    {
+        EdgeOutput[id.xy] = 0;
+        return;
+    }
+
+    int2 offsets[8] = {
+        int2(-1, -1), int2(0, -1), int2(1, -1),
+        int2(-1,  0),              int2(1,  0),
+        int2(-1,  1), int2(0,  1), int2(1,  1)
+    };
+
+    bool isEdge = false;
+    for (int i = 0; i < 8; i++)
+    {
+        int2 pos = int2(id.xy) + offsets[i];
+        if (pos.x >= 0 && pos.x < Width && pos.y >= 0 && pos.y < Height)
+        {
+            if (SourceTex[pos] < 0.5)
+            {
+                isEdge = true;
+                break;
+            }
+        }
+        else
+        {
+            isEdge = true;
+            break;
+        }
+    }
+
+    EdgeOutput[id.xy] = isEdge ? 1.0 : 0.0;
+}
+
+[numthreads(8,8,1)]
+void JumpFloodInit(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)Width || id.y >= (uint)Height)
+        return;
+
+    float edge = EdgeTex[id.xy];
+
+    if (edge > 0.5)
+    {
+        DistanceField[id.xy] = float2(id.x, id.y);
+    }
+    else
+    {
+        DistanceField[id.xy] = float2(-1, -1);
+    }
+}
+
+[numthreads(8,8,1)]
+void JumpFlood(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)Width || id.y >= (uint)Height)
+        return;
+
+    float2 bestSeed = DistanceField[id.xy];
+    float bestDist = 999999.0;
+
+    if (bestSeed.x >= 0)
+    {
+        float2 diff = bestSeed - float2(id.xy);
+        bestDist = dot(diff, diff);
+    }
+
+    int2 offsets[9] = {
+        int2(-1, -1), int2(0, -1), int2(1, -1),
+        int2(-1,  0), int2(0,  0), int2(1,  0),
+        int2(-1,  1), int2(0,  1), int2(1,  1)
+    };
+
+    for (int i = 0; i < 9; i++)
+    {
+        int2 samplePos = int2(id.xy) + offsets[i] * StepSize;
+
+        if (samplePos.x >= 0 && samplePos.x < Width && samplePos.y >= 0 && samplePos.y < Height)
+        {
+            float2 seed = DistanceField[samplePos];
+
+            if (seed.x >= 0)
+            {
+                float2 diff = seed - float2(id.xy);
+                float dist = dot(diff, diff);
+
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    bestSeed = seed;
+                }
+            }
+        }
+    }
+
+    DistanceField[id.xy] = bestSeed;
+}
+
+[numthreads(8,8,1)]
+void ComputeChamferDistance(uint3 id : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupThreadID)
 {
     uint threadIndex = groupThreadID.y * 8 + groupThreadID.x;
-
-    sharedSumRegion[threadIndex] = 0;
-    sharedSumRef[threadIndex] = 0;
-    sharedSumRegionSq[threadIndex] = 0;
-    sharedSumRefSq[threadIndex] = 0;
-    sharedSumProduct[threadIndex] = 0;
+    sharedDistance[threadIndex] = 0;
 
     if (id.x < (uint)Width && id.y < (uint)Height)
     {
-        float regionVal = RegionTex[id.xy];
-        float refVal = ReferenceTex[id.xy];
+        float regionEdgeVal = RegionEdge[id.xy];
+        float referenceEdgeVal = ReferenceEdge[id.xy];
 
-        sharedSumRegion[threadIndex] = regionVal;
-        sharedSumRef[threadIndex] = refVal;
-        sharedSumRegionSq[threadIndex] = regionVal * regionVal;
-        sharedSumRefSq[threadIndex] = refVal * refVal;
-        sharedSumProduct[threadIndex] = regionVal * refVal;
+        float dist = 0;
+
+        if (regionEdgeVal > 0.5)
+        {
+            float2 seed = ReferenceDistanceField[id.xy];
+            if (seed.x >= 0)
+            {
+                float2 diff = seed - float2(id.xy);
+                dist += sqrt(dot(diff, diff));
+            }
+        }
+
+        if (referenceEdgeVal > 0.5)
+        {
+            float2 seed = RegionDistanceField[id.xy];
+            if (seed.x >= 0)
+            {
+                float2 diff = seed - float2(id.xy);
+                dist += sqrt(dot(diff, diff));
+            }
+        }
+
+        sharedDistance[threadIndex] = dist;
     }
 
     GroupMemoryBarrierWithGroupSync();
 
     if (threadIndex < 32)
-    {
-        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 32];
-        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 32];
-        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 32];
-        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 32];
-        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 32];
-    }
-
+        sharedDistance[threadIndex] += sharedDistance[threadIndex + 32];
     GroupMemoryBarrierWithGroupSync();
 
     if (threadIndex < 16)
-    {
-        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 16];
-        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 16];
-        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 16];
-        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 16];
-        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 16];
-    }
-
+        sharedDistance[threadIndex] += sharedDistance[threadIndex + 16];
     GroupMemoryBarrierWithGroupSync();
 
     if (threadIndex < 8)
-    {
-        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 8];
-        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 8];
-        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 8];
-        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 8];
-        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 8];
-    }
-
+        sharedDistance[threadIndex] += sharedDistance[threadIndex + 8];
     GroupMemoryBarrierWithGroupSync();
 
     if (threadIndex < 4)
-    {
-        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 4];
-        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 4];
-        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 4];
-        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 4];
-        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 4];
-    }
-
+        sharedDistance[threadIndex] += sharedDistance[threadIndex + 4];
     GroupMemoryBarrierWithGroupSync();
 
     if (threadIndex < 2)
-    {
-        sharedSumRegion[threadIndex] += sharedSumRegion[threadIndex + 2];
-        sharedSumRef[threadIndex] += sharedSumRef[threadIndex + 2];
-        sharedSumRegionSq[threadIndex] += sharedSumRegionSq[threadIndex + 2];
-        sharedSumRefSq[threadIndex] += sharedSumRefSq[threadIndex + 2];
-        sharedSumProduct[threadIndex] += sharedSumProduct[threadIndex + 2];
-    }
-
+        sharedDistance[threadIndex] += sharedDistance[threadIndex + 2];
     GroupMemoryBarrierWithGroupSync();
 
     if (threadIndex == 0)
     {
-        sharedSumRegion[0] += sharedSumRegion[1];
-        sharedSumRef[0] += sharedSumRef[1];
-        sharedSumRegionSq[0] += sharedSumRegionSq[1];
-        sharedSumRefSq[0] += sharedSumRefSq[1];
-        sharedSumProduct[0] += sharedSumProduct[1];
-
-        AtomicAddFloat(0, sharedSumRegion[0]);
-        AtomicAddFloat(1, sharedSumRef[0]);
-        AtomicAddFloat(2, sharedSumRegionSq[0]);
-        AtomicAddFloat(3, sharedSumRefSq[0]);
-        AtomicAddFloat(4, sharedSumProduct[0]);
+        sharedDistance[0] += sharedDistance[1];
+        AtomicAddFloat(0, sharedDistance[0]);
     }
 }
 

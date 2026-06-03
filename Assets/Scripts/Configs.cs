@@ -15,6 +15,8 @@ public static class Configs
     
     public const int ViewportHeight = 270;
 
+    public const float ShapeCompareDistanceThreshold = 8500;
+
     public static readonly Dictionary<(int, int), SlotJigsawData> InitialPutJigsaws = new()
     {
         {(100, 1), new SlotJigsawData
@@ -32,18 +34,6 @@ public static class Configs
             JigsawColor = Colors.GetJigsawColor(ColorType.Green),
         }},
     };
-
-    public static float GetShapeCompareThreshold(string shapeName)
-    {
-        return shapeName switch
-        {
-            "1I" => 0.75f,
-            "1O" => 0.9f,
-            "I+O" => 0.95f,
-            "I+O_Mirrored" => 0.95f,
-            _ => 0.85f,
-        };
-    }
 
     public static float GetVfxVolume(string groupName)
     {
