@@ -145,10 +145,7 @@ public class ShapeComparor : MonoBehaviour
             var distance = ComputeChamferDistance(regionDistanceField, refData.distanceFieldRT,
                 regionEdge, refData.edgeRT);
             
-            // // ------ debug ------
-            // var tempSimilarity = 1f / (1f + distance * 0.01f);
-            // Debug.Log($"ref jigsaw type: {refData.jigsawSO.jigsawName}; rotate angle: {rotateAngle}; distance: {distance}; similarity: {tempSimilarity}");
-            // // ------ debug ------
+            // Debug.Log($"ref jigsaw type: {refData.jigsawSO.jigsawName}; rotate angle: {rotateAngle}; distance: {distance};");
 
             if (distance < minDistance)
             {
@@ -351,11 +348,26 @@ public class ShapeComparor : MonoBehaviour
         return normalized;
     }
 
-    public bool IsShapeSimilar(RenderTexture regionMask, int rotateAngle,
+    public bool IsShapeSimilar(RenderTexture regionMask, out int angle,
         out JigsawSO jigsawData, out RenderTexture capturedRegionRT, bool releaseRt = true, JigsawSO[] templateSos = null)
     {
-        var distance = GetShapeDistance(regionMask, rotateAngle, out jigsawData, out capturedRegionRT, templateSos);
-        var isSimilar = distance < Configs.ShapeCompareDistanceThreshold;
+        var minDistance = float.MaxValue;
+        jigsawData = null;
+        capturedRegionRT = null;
+        angle = 0;
+        for (var rotateAngle = 0; rotateAngle < 360; rotateAngle += 90)
+        {
+            var distance = GetShapeDistance(regionMask, rotateAngle, out var jigsawSo, out var shapeRT, templateSos);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                capturedRegionRT?.Release();
+                capturedRegionRT = shapeRT;
+                angle = rotateAngle;
+                jigsawData = jigsawSo;
+            }
+        }
+        var isSimilar = minDistance < Configs.ShapeCompareDistanceThreshold;
         if (!isSimilar && releaseRt) capturedRegionRT?.Release();
         return isSimilar;
     }

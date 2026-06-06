@@ -223,6 +223,7 @@ public class JigsawUI : MonoBehaviour
             visiblePosition, out var rect, out var rt, out var angle, clearOutline: true, layerMask);
         VisibleRect = rect;
         _angle = angle;
+        if (!rt) return;
         
         _visiblePartRt?.Release();
         _visiblePartRt = new RenderTexture(rt.width, rt.height, 0, RenderTextureFormat.ARGB32);

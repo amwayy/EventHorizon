@@ -140,36 +140,45 @@ public class ScreenshotController : MonoBehaviour
         rt = null;
         targetAngle = 0;
         DoColorFloodFill(position);
-        for (var angle = 0; angle < 360; angle += 90)
+        
+        var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, out var angle,
+            out var jigsawData, out var capturedRegionRT, releaseRt: false);
+        var bboxCenter = shapeComparor.GetBBoxCenter();
+        if (!capturedRegionRT)
         {
-            var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle,
-                out var jigsawData, out var capturedRegionRT, releaseRt: false);
-            var bboxCenter = shapeComparor.GetBBoxCenter();
-            if (!capturedRegionRT) continue;
-            rect = new Rect(
-                bboxCenter.x - capturedRegionRT.width / 2f,  bboxCenter.y - capturedRegionRT.height / 2f, 
-                capturedRegionRT.width, capturedRegionRT.height);
-            rt = capturedRegionRT;
-            targetAngle = angle;
-            if (!isShapeMatched) continue;
             if (clearOutline)
             {
                 ClearPreviousOutline();   
             }
             _cam.cullingMask = originalCullingMask;
-            return Utility.Rotate(jigsawData, angle);
-        }
+            return new JigsawRuntimeData
+            {
+                Source = null,
+            };  
+        } 
+        rect = new Rect(
+            bboxCenter.x - capturedRegionRT.width / 2f,  bboxCenter.y - capturedRegionRT.height / 2f, 
+            capturedRegionRT.width, capturedRegionRT.height);
+        rt = capturedRegionRT;
+        targetAngle = angle;
+        if (!isShapeMatched)
+        {
+            if (clearOutline)
+            {
+                ClearPreviousOutline();   
+            }
+            _cam.cullingMask = originalCullingMask;
+            return new JigsawRuntimeData
+            {
+                Source = null,
+            };  
+        } 
         if (clearOutline)
         {
             ClearPreviousOutline();   
         }
-        
         _cam.cullingMask = originalCullingMask;
-        
-        return new JigsawRuntimeData
-        {
-            Source = null,
-        };
+        return Utility.Rotate(jigsawData, angle);
     }
 
     private void TryCaptureMouseRegion()
@@ -197,42 +206,39 @@ public class ScreenshotController : MonoBehaviour
             }
         }
         
-        for (var angle = 0; angle < 360; angle += 90)
+        var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, out var angle, 
+            out var jigsawData, out var capturedRegionRT, templateSos: templateJigsawSos);
+        if (!isShapeMatched) return;
+        if (!jigsawData.canCapture) return;
+        if (!capturedRegionRT) return;
+        
+        ToggleScreenshotState();
+
+        if (isOnSlot)
         {
-            var isShapeMatched = shapeComparor.IsShapeSimilar(_maskTexture, angle, 
-                out var jigsawData, out var capturedRegionRT, templateSos: templateJigsawSos);
-            if (!isShapeMatched) continue;
-            if (!jigsawData.canCapture) continue;
-            
-            ToggleScreenshotState();
-
-            if (isOnSlot)
-            {
-                AudioManager.Instance.Play(SoundGroup.Put);
-                return;
-            }
-
-            // Convert RFloat mask to ARGB32 with transparency
-            var displayRT = new RenderTexture(capturedRegionRT.width, capturedRegionRT.height, 0, RenderTextureFormat.ARGB32);
-            displayRT.enableRandomWrite = true;
-            displayRT.Create();
-
-            // Use MaskExtract shader to convert: white foreground, transparent background
-            var maskMaterial = new Material(Shader.Find("Hidden/MaskToTransparent"));
-            Graphics.Blit(capturedRegionRT, displayRT, maskMaterial);
-            Destroy(maskMaterial);
-
-            // Release the original RFloat mask
-            capturedRegionRT.Release();
-
-            var bBoxCenter = shapeComparor.GetBBoxCenter();
-            var color = GetColorFromRT(_screenCapture, GameManager.Instance.GetViewportMousePosition());
-            EventComponent.Instance.Fire(this,
-                CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color, hitGameObject));
-            
-            AudioManager.Instance.Play(SoundGroup.Capture);
-            break;
+            AudioManager.Instance.Play(SoundGroup.Put);
+            return;
         }
+
+        // Convert RFloat mask to ARGB32 with transparency
+        var displayRT = new RenderTexture(capturedRegionRT.width, capturedRegionRT.height, 0, RenderTextureFormat.ARGB32);
+        displayRT.enableRandomWrite = true;
+        displayRT.Create();
+
+        // Use MaskExtract shader to convert: white foreground, transparent background
+        var maskMaterial = new Material(Shader.Find("Hidden/MaskToTransparent"));
+        Graphics.Blit(capturedRegionRT, displayRT, maskMaterial);
+        Destroy(maskMaterial);
+
+        // Release the original RFloat mask
+        capturedRegionRT.Release();
+
+        var bBoxCenter = shapeComparor.GetBBoxCenter();
+        var color = GetColorFromRT(_screenCapture, GameManager.Instance.GetViewportMousePosition());
+        EventComponent.Instance.Fire(this,
+            CapturedJigsawEventArgs.Create(angle, jigsawData, displayRT, bBoxCenter, color, hitGameObject));
+        
+        AudioManager.Instance.Play(SoundGroup.Capture);
     }
 
     private void DoColorFloodFill(Vector2 position)

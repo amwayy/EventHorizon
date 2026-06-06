@@ -15,7 +15,7 @@ public static class Configs
     
     public const int ViewportHeight = 270;
 
-    public const float ShapeCompareDistanceThreshold = 8500;
+    public const float ShapeCompareDistanceThreshold = 15000;
 
     public static readonly Dictionary<(int, int), SlotJigsawData> InitialPutJigsaws = new()
     {
