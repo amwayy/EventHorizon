@@ -7,12 +7,13 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom_Transparent
-  m_Shader: {fileID: 4800000, guid: 5d6f001abfe7469f9dde8a460ec680c0, type: 3}
+  m_Name: Custom_UnlitStripe_Wall_Magenta
+  m_Shader: {fileID: 4800000, guid: a0dc7c2860c2047d2815e8982632066c, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _AXISMODE_XZ
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -22,20 +23,20 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+    m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Alpha: 0.5
-    - _Angle: 0
-    - _Distortion: 0.1
-    - _Emission: 2
-    - _Speed: 1
-    - _Tiling: 1
+    - _Angle: 24.5
+    - _AxisMode: 3
+    - _Density: 0.9
+    - _Size: 0.081
+    - _Width: 0.1
     m_Colors:
-    - _Color: {r: 1, g: 0, b: 0, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ColorA: {r: 1, g: 0.5805085, b: 1, a: 1}
+    - _ColorB: {r: 0.9254902, g: 0.5372549, b: 0.9254902, a: 1}
+    - _CustomDir: {r: 1, g: 0, b: 0, a: 0}
+    - _Direction: {r: 1, g: 0, b: 0, a: 0}
+    - _StripeColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

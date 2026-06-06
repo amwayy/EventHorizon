@@ -125,6 +125,7 @@ MonoBehaviour:
   - {fileID: 3972157893376308360}
   jigsawContainer: {fileID: 5727323308894881764}
   entryPoint: {fileID: 7254046132389543794}
+  entranceBarrier: {fileID: 0}
 --- !u!65 &5859122980773824917
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -144,8 +145,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 123.50395, y: 5.8471284, z: 24.991312}
-  m_Center: {x: -74.55193, y: 1.9235637, z: -10.114345}
+  m_Size: {x: 123.50395, y: 5.8471284, z: 22.269629}
+  m_Center: {x: -74.55193, y: 1.9235637, z: -9.582391}
 --- !u!1 &6405466081266434939
 GameObject:
   m_ObjectHideFlags: 0

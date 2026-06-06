@@ -297,13 +297,16 @@ namespace DefaultNamespace
             }
         }
 
-        public void ResetCollection(Color exceptedColor)
+        public void OnGoThroughBarrier()
         {
             var jigsawUIsToRemove = new List<JigsawUI>();
             foreach (var (jigsawUI, collectives) in _collectedJigsaws)
             {
                 if (!jigsawUI.gameObject.activeSelf) continue;
-                if (Utility.IsSameColor(jigsawUI.Color, exceptedColor)) continue;
+                if (!jigsawUI.TryGetAnyVisibleScreenPosition(out var visiblePos)) continue;
+                var visibleShape = ScreenshotController.Instance.GetSameColorRegionShape(
+                    visiblePos, out _, out _, out _, true);
+                if (visibleShape.Source == null) continue;
                 HideJigsaw(jigsawUI);
                 jigsawUIsToRemove.Add(jigsawUI);
                 jigsawUI.gameObject.SetActive(false);

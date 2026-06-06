@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using DefaultNamespace;
 using GameEvent;
 using GameEvent.Args;
 using UnityEngine;
@@ -11,6 +13,7 @@ public class Level: MonoBehaviour
     [SerializeField] private JigsawBoard[] jigsawBoards;
     [SerializeField] private Transform jigsawContainer;
     [SerializeField] private Transform entryPoint;
+    [SerializeField] private JigsawBarrier entranceBarrier;
     
     public List<int> AdjacentLevelIds => adjacentLevelIds;
     public int LevelId => levelIndex;
@@ -28,9 +31,16 @@ public class Level: MonoBehaviour
                 jigsawCollective.Init(levelIndex, i);
             }
         }
+
+        var isLevelSolved = true;
         foreach (var board in jigsawBoards)
         {
             board.Init(levelIndex);
+            isLevelSolved &= board.IsFilled();
+        }
+        if (entranceBarrier)
+        {
+            entranceBarrier.Init(levelIndex, isLevelSolved);   
         }
         
         EventComponent.Instance.Subscribe(LevelResetEventArgs.EventId, OnLevelReset);

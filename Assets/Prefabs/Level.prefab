@@ -314,6 +314,7 @@ MonoBehaviour:
   - {fileID: 2982821715886546761}
   jigsawContainer: {fileID: 5040880440473054929}
   entryPoint: {fileID: 3300282760429544052}
+  entranceBarrier: {fileID: 2281869112689997030}
 --- !u!1 &4465317065436016263
 GameObject:
   m_ObjectHideFlags: 0
@@ -856,6 +857,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 348340370561194909, guid: 42459dbe7e47b47f881d4a3575f4f94a, type: 3}
   m_PrefabInstance: {fileID: 1918219500870776991}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2281869112689997030 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 374979263171103865, guid: 42459dbe7e47b47f881d4a3575f4f94a, type: 3}
+  m_PrefabInstance: {fileID: 1918219500870776991}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d79cc6b5251a42488042f8724daf0343, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &3938858088150357630
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1081,7 +1093,7 @@ PrefabInstance:
     - target: {fileID: 4429318922222362872, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 833f01a489da44e88a52c8c2e059d2e7, type: 2}
+      objectReference: {fileID: 2100000, guid: 0a01bd0c4c67d4f89a0dc2e4f8fb5554, type: 2}
     - target: {fileID: 5374169726067608896, guid: 0557d0e2d87e5ff4283a21ac619d0fb5, type: 3}
       propertyPath: m_Mesh
       value: 

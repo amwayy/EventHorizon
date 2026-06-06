@@ -310,7 +310,7 @@ public class JigsawUI : MonoBehaviour
         rawImage.texture = result;
     }
     
-    private bool TryGetAnyVisibleScreenPosition(out Vector2 result)
+    public bool TryGetAnyVisibleScreenPosition(out Vector2 result)
     {
         var hasVisiblePoint = _rawImageHandler.TryGetAnyVisibleScreenPosition(out result);
         return hasVisiblePoint;

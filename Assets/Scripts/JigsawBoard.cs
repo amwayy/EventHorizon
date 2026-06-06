@@ -1,4 +1,6 @@
 using System.Linq;
+using GameEvent;
+using GameEvent.Args;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -99,7 +101,7 @@ public class JigsawBoard : MonoBehaviour
         return true;
     }
     
-    private bool IsFilled()
+    public bool IsFilled()
     {
         // 👉 1. 是否填满
         var slotJigsawDataArray = slots.Select(slot => slot.JigsawData).ToArray();
@@ -203,6 +205,7 @@ public class JigsawBoard : MonoBehaviour
                 slot.Unlock();
             }
             _isShowingSlots = false;
+            EventComponent.Instance.Fire(this, BoardStateChangedEventArgs.Create(true));
         }
     }
 
@@ -213,6 +216,7 @@ public class JigsawBoard : MonoBehaviour
             slot.gameObject.SetActive(true);
             slot.ResetState();
         }
+        EventComponent.Instance.Fire(this, BoardStateChangedEventArgs.Create(false));
     }
     
     public void ClearSlot(JigsawSlot sender)
