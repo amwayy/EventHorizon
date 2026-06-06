@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DefaultNamespace;
 using GameEvent;
 using GameEvent.Args;
@@ -5,10 +6,12 @@ using UnityEngine;
 
 public class LevelManager : MonoBehaviour
 {
-    [SerializeField] private Level[] levels;
     [SerializeField] private CharacterController playerController;
+    [SerializeField] private Transform[] regions;
     
     public static LevelManager Instance;
+
+    private readonly List<Level> levels = new();
 
     public int CurrentLevelIndex { get; private set; } = -1;
 
@@ -23,6 +26,8 @@ public class LevelManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+        
+        InitLevelList();
     }
 
     private void Start()
@@ -101,7 +106,7 @@ public class LevelManager : MonoBehaviour
 
     private Level GetLevel(int levelId)
     {
-        return System.Array.Find(levels, lv => lv.LevelId == levelId);
+        return levels.Find(x => x.LevelId == levelId);
     }
 
     public void GoBackToHub()
@@ -121,5 +126,23 @@ public class LevelManager : MonoBehaviour
     {
         var level = GetLevel(levelId);
         level.ResetSlot(slotIndex, false);
+    }
+
+    private void InitLevelList()
+    {
+        foreach (var region in regions)
+        {
+            if (region.TryGetComponent(out Level hub))
+            {
+                levels.Add(hub);
+            }
+            foreach (Transform child in region)
+            {
+                if (child.TryGetComponent(out Level level))
+                {
+                    levels.Add(level);
+                }
+            }
+        }
     }
 }
