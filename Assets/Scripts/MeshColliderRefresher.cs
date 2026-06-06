@@ -18,6 +18,9 @@ public class MeshColliderRefresher : MonoBehaviour
     {
         _meshCollider.sharedMesh = null;
         var mesh = _meshFilter.mesh;
-        _meshCollider.sharedMesh = mesh;
+        if (mesh != null && mesh.vertexCount > 0)
+        {
+            _meshCollider.sharedMesh = mesh;
+        }
     }
 }

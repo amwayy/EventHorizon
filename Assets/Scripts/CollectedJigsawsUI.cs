@@ -269,11 +269,12 @@ namespace DefaultNamespace
 
         public void OnResetSlot(JigsawSlot slot, bool updateCollective)
         {
-            if (!_putJigsaws.TryGetValue(slot, out var jigsaws)) return;
-
-            foreach (var jigsaw in jigsaws)
+            if (_putJigsaws.TryGetValue(slot, out var jigsaws))
             {
-                HideJigsaw(jigsaw);
+                foreach (var jigsaw in jigsaws)
+                {
+                    HideJigsaw(jigsaw);
+                }   
             }
             
             _putJigsaws.Remove(slot);
