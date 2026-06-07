@@ -1,4 +1,3 @@
-using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,7 +8,7 @@ namespace DefaultNamespace
     {
         [SerializeField] private Button backButton;
         [SerializeField] private Button quitButton;
-        [SerializeField] private Button backToHubButton;
+        [SerializeField] private Button clearSaveDataButton;
         [SerializeField] private Canvas canvas;
         [SerializeField] private TMP_Text versionText;
         
@@ -17,7 +16,7 @@ namespace DefaultNamespace
         {
             backButton.onClick.AddListener(Resume);
             quitButton.onClick.AddListener(Quit);
-            backToHubButton.onClick.AddListener(GoBackToHub);
+            clearSaveDataButton.onClick.AddListener(ClearSaveData);
         }
 
         private void Start()
@@ -25,19 +24,9 @@ namespace DefaultNamespace
             versionText.text = Application.version;
         }
 
-        private void OnEnable()
+        private void ClearSaveData()
         {
-            if (!LevelManager.Instance) return;
-
-            var currentLevelId = LevelManager.Instance.CurrentLevelIndex;
-            var showBackToHub = currentLevelId == Configs.HubLevelId || currentLevelId >= Configs.CanBackToHubLevelIdMin;
-            backToHubButton.gameObject.SetActive(showBackToHub);
-        }
-
-        private void GoBackToHub()
-        {
-            GameManager.Instance.ToggleOpenMenu();
-            LevelManager.Instance.GoBackToHub();
+            GameManager.Instance.ClearSaveData();
         }
 
         private void Resume()

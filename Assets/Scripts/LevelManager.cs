@@ -109,13 +109,6 @@ public class LevelManager : MonoBehaviour
         return levels.Find(x => x.LevelId == levelId);
     }
 
-    public void GoBackToHub()
-    {
-        TeleportPlayerToLevel(Configs.HubLevelId);
-        
-        OnEnterLevel(Configs.HubLevelId);
-    }
-
     public void ResetLevelCollective(int levelId, int collectiveIndex, bool sendNotification = true)
     {
         var level = GetLevel(levelId);

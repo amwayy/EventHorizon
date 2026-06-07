@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using GameEvent;
 using GameEvent.Args;
@@ -96,5 +95,11 @@ public class GameManager: MonoBehaviour
     {
         var mousePos = Input.mousePosition;
         return GetViewportPosition(mousePos);
+    }
+
+    public void ClearSaveData()
+    {
+        ES3.DeleteFile();
+        Application.Quit();
     }
 }

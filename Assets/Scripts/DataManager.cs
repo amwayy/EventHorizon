@@ -7,9 +7,17 @@ public class DataManager : MonoBehaviour
 
     private void Awake()
     {
-        Instance = this;
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
         
-        InitPutJigsaws();
+        InitData();
     }
 
     public bool HasKey(string dataKey)
@@ -49,7 +57,7 @@ public class DataManager : MonoBehaviour
         Save(dataKey, value - 1);
     }
 
-    private void InitPutJigsaws()
+    public void InitData()
     {
         if (HasKey(DataKey.PutJigsaws)) return;
         

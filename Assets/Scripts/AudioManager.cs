@@ -24,9 +24,16 @@ public class AudioManager : MonoBehaviour
 
     private void Awake()
     {
-        Instance = this;
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
 
-        // 初始化池
         for (int i = 0; i < poolSize; i++)
         {
             var go = new GameObject($"AudioPlayer_{i}");
