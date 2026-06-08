@@ -4,6 +4,7 @@ using System.Threading;
 using DefaultNamespace;
 using GameEvent;
 using GameEvent.Args;
+using TMPro;
 using UnityEngine;
 
 public class Level: MonoBehaviour
@@ -14,12 +15,18 @@ public class Level: MonoBehaviour
     [SerializeField] private Transform jigsawContainer;
     [SerializeField] private Transform entryPoint;
     [SerializeField] private JigsawBarrier entranceBarrier;
+    [SerializeField] private TMP_Text titleText;
     
     public List<int> AdjacentLevelIds => adjacentLevelIds;
     public int LevelId => levelIndex;
     public Transform EntryPoint => entryPoint;
 
     private bool _isAdjacentLevelsInitialized;
+
+    private void Awake()
+    {
+        InitTitle();
+    }
 
     private void Start()
     {
@@ -116,6 +123,12 @@ public class Level: MonoBehaviour
         adjacentLevelIds.Add(levelIndex + 1);
         
         _isAdjacentLevelsInitialized = true;
+    }
+
+    private void InitTitle()
+    {
+        if (!titleText) return;
+        titleText.text = $"{levelIndex / 100}-{levelIndex % 100} {titleText.text}";
     }
 
 }
