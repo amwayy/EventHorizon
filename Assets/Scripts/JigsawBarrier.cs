@@ -7,6 +7,7 @@ namespace DefaultNamespace
     public class JigsawBarrier : MonoBehaviour
     {
         [SerializeField] private ColorType colorType;
+        [SerializeField] private Renderer rd;
         [SerializeField] private float opacity = 0.5f;
         
         private static readonly int Alpha = Shader.PropertyToID("_Alpha");
@@ -58,7 +59,6 @@ namespace DefaultNamespace
 
         private void UpdateColor()
         {
-            var rd = GetComponent<Renderer>();
             rd.material.color = Colors.GetBarrierColor(colorType);
             rd.material.SetFloat(Alpha, opacity);
         }
