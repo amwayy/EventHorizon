@@ -63,8 +63,9 @@ public class JigsawUI : MonoBehaviour
         HandleDrag();
         
         var screenPos = _mainCamera.WorldToScreenPoint(_rectTransform.position);
-        var ray = _mainCamera.ScreenPointToRay(screenPos);
-        if (!Physics.Raycast(ray, out var hit) || !hit.collider.TryGetComponent(out JigsawSlot slot))
+        var ray = _mainCamera.ScreenPointToRay(screenPos);var layerMask = LayerMask.GetMask("Slot");
+        if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, layerMask, QueryTriggerInteraction.Ignore)
+            || !hit.collider.TryGetComponent(out JigsawSlot slot))
         {
             _hoveringSlot = null;
         }
@@ -175,7 +176,9 @@ public class JigsawUI : MonoBehaviour
         _rectTransform.anchoredPosition = localPoint + _dragOffset;
         
         var ray = _mainCamera.ScreenPointToRay(GameManager.Instance.GetViewportMousePosition());
-        if (!Physics.Raycast(ray, out var hit) || !hit.collider.TryGetComponent(out JigsawSlot slot))
+        var layerMask = LayerMask.GetMask("Slot");
+        if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, layerMask, QueryTriggerInteraction.Ignore) 
+            || !hit.collider.TryGetComponent(out JigsawSlot slot))
         {
             _hoveringSlot = null;
             return;
