@@ -301,10 +301,7 @@ namespace DefaultNamespace
             foreach (var (jigsawUI, collectives) in _collectedJigsaws)
             {
                 if (!jigsawUI.gameObject.activeSelf) continue;
-                if (!jigsawUI.TryGetAnyVisibleScreenPosition(out var visiblePos)) continue;
-                var visibleShape = ScreenshotController.Instance.GetSameColorRegionShape(
-                    visiblePos, out _, out _, out _, true);
-                if (visibleShape.Source == null) continue;
+                if (jigsawUI.IsConnectedWithWorld(clearOutline: true)) continue;
                 HideJigsaw(jigsawUI);
                 jigsawUIsToRemove.Add(jigsawUI);
                 jigsawUI.gameObject.SetActive(false);
