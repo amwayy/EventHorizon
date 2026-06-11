@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using GameEvent;
 using GameEvent.Args;
 using LibCSG;
@@ -18,7 +17,6 @@ namespace DefaultNamespace
     
     public class CuttableWall : MonoBehaviour
     {
-        [SerializeField] private int levelId;
         [SerializeField] private MeshFilter wallMeshFilter;
         [SerializeField] private MeshFilter resultBufferA;
         [SerializeField] private MeshFilter resultBufferB;
@@ -34,6 +32,7 @@ namespace DefaultNamespace
         private bool _hasCut;
         private MeshFilter _activeMeshFilter;
         private Camera _mainCamera;
+        private int _levelId;
 
         private void Awake()
         {
@@ -43,15 +42,15 @@ namespace DefaultNamespace
             resultBufferB.transform.position = wallMeshFilter.transform.position;
             resultBufferA.transform.rotation = wallMeshFilter.transform.rotation;
             resultBufferB.transform.rotation = wallMeshFilter.transform.rotation;
-
-            foreach (var collective in jigsawCollectives)
-            {
-                collective.jigsawCollective.Init(levelId, transform.GetSiblingIndex());
-            }
         }
 
         private void Start()
         {
+            foreach (var collective in jigsawCollectives)
+            {
+                collective.jigsawCollective.Init(_levelId, transform.GetSiblingIndex());
+            }
+            
             _csgOp = new CSGBrushOperation();
             
             _wallBrush = new CSGBrush(wallMeshFilter.gameObject);
@@ -74,6 +73,11 @@ namespace DefaultNamespace
             EventComponent.Instance.Subscribe(LevelResetEventArgs.EventId, OnLevelReset);
         }
 
+        public void InitLevelId(int levelId)
+        {
+            _levelId = levelId;
+        }
+
         private void InitHoles()
         {
             var putJigsaws = 
@@ -83,7 +87,7 @@ namespace DefaultNamespace
                 if (jigsawData.WallCollectiveDataArray == null) continue;
                 foreach (var wallCollectiveData in jigsawData.WallCollectiveDataArray)
                 {
-                    if (wallCollectiveData.LevelId == levelId &&
+                    if (wallCollectiveData.LevelId == _levelId &&
                         wallCollectiveData.WallIndex == transform.GetSiblingIndex())
                     {
                         var jigsawCollectiveData = jigsawCollectives.Find(
@@ -112,7 +116,7 @@ namespace DefaultNamespace
 
         private void OnCapturedJigsaw(object sender, GameEventArgs e)
         {
-            if (LevelManager.Instance.CurrentLevelIndex != levelId) return;
+            if (LevelManager.Instance.CurrentLevelIndex != _levelId) return;
             if (e is not CapturedJigsawEventArgs args) return;
 
             var jigsawCollectiveData = jigsawCollectives.Find(data => data.jigsawData.jigsawName == args.JigsawData.jigsawName);
@@ -181,7 +185,7 @@ namespace DefaultNamespace
 
         private void OnLevelReset(object sender, GameEventArgs e)
         {
-            if (LevelManager.Instance.CurrentLevelIndex != levelId) return;
+            if (LevelManager.Instance.CurrentLevelIndex != _levelId) return;
             
             ResetState();
         }

@@ -26,6 +26,7 @@ public class Level: MonoBehaviour
     private void Awake()
     {
         InitTitle();
+        InitCuttableWalls();
     }
 
     private void Start()
@@ -129,6 +130,14 @@ public class Level: MonoBehaviour
     {
         if (!titleText) return;
         titleText.text = $"{levelIndex / 100}-{levelIndex % 100} {titleText.text}";
+    }
+    
+    private void InitCuttableWalls()
+    {
+        foreach (var cuttableWall in transform.GetComponentsInChildren<CuttableWall>())
+        {
+            cuttableWall.InitLevelId(levelIndex);
+        }
     }
 
 }
