@@ -130,7 +130,9 @@ namespace DefaultNamespace
             }
 
             jigsawCollective.transform.position = hit.point;
-            jigsawCollective.transform.rotation = Quaternion.Euler(jigsawCollective.transform.eulerAngles.x, jigsawCollective.transform.eulerAngles.y, args.Angle);
+            var isInFront = Vector3.Dot(hit.collider.transform.forward, ray.direction) < 0;
+            jigsawCollective.transform.localRotation = Quaternion.Euler(
+                jigsawCollective.transform.eulerAngles.x, isInFront ? 180f : 0f, args.Angle);
             jigsawCollective.transform.localScale = Vector3.one;
             var jigsawScreenRect = Utility.GetScreenRect(jigsawCollectiveData.meshFilter.GetComponent<Renderer>(), _mainCamera);
             var scaleFactor = (args.CapturedJigsawRT.width / jigsawScreenRect.width + args.CapturedJigsawRT.height /  jigsawScreenRect.height) * 0.5f;
