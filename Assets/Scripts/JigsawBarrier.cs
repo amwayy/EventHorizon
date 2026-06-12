@@ -1,5 +1,6 @@
 using GameEvent;
 using GameEvent.Args;
+using StarterAssets;
 using UnityEngine;
 
 namespace DefaultNamespace

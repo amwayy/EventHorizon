@@ -1,0 +1,21 @@
+﻿#pragma kernel CSMain
+
+RWStructuredBuffer<uint> Result; // [0] = count
+
+Texture2D<float4> Input;
+int Width;
+int Height;
+float AlphaThreshold;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= Width || id.y >= Height) return;
+
+    float4 color = Input[id.xy];
+
+    if (color.a > AlphaThreshold)
+    {
+        InterlockedAdd(Result[0], 1);
+    }
+}

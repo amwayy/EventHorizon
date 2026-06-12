@@ -321,13 +321,12 @@ public class JigsawUI : MonoBehaviour
     public bool IsConnectedWithWorld(bool clearOutline = false)
     {
         if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return false;
-        var uiVisibleJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(
-            visiblePosition, out var uiRect, out _, out _, clearOutline: true, layer: LayerMask.GetMask("UI"));
-        var visibleJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(
-            visiblePosition, out var fullRect, out _, out _, clearOutline: clearOutline);
-        if (!visibleJigsawData.Source || !uiVisibleJigsawData.Source) 
-            return Vector2.Distance(uiRect.size, fullRect.size) > 10f;
-        return uiVisibleJigsawData.Source.jigsawName != visibleJigsawData.Source.jigsawName ||
-               uiVisibleJigsawData.RotateAngle != visibleJigsawData.RotateAngle;
+        ScreenshotController.Instance.GetSameColorRegionShape(
+            visiblePosition, out _, out var uiRt, out _, clearOutline: true, layer: LayerMask.GetMask("UI"));
+        ScreenshotController.Instance.GetSameColorRegionShape(
+            visiblePosition, out _, out var worldRt, out _, clearOutline: clearOutline);
+        var uiRtPixelCount = GPUComputeHelper.Instance.GetPixelCount(uiRt);
+        var worldRtPixelCount = GPUComputeHelper.Instance.GetPixelCount(worldRt);
+        return Mathf.Abs(1 - (float)worldRtPixelCount / uiRtPixelCount) > 0.1f;
     }
 }
