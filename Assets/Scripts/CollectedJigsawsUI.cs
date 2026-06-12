@@ -319,50 +319,21 @@ namespace DefaultNamespace
 
         public void OnEndDragJigsawUI(JigsawUI jigsawUI)
         {
-            jigsawUI.ConnectedJigsaws.Clear();
             foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
             {
                 if (!collectedJigsawUI.gameObject.activeSelf) continue;
                 collectedJigsawUI.UpdateUIVisibleArea();
-                if (collectedJigsawUI == jigsawUI) continue;
-
-                if (collectedJigsawUI.ConnectedJigsaws.Contains(jigsawUI))
-                {
-                    collectedJigsawUI.ConnectedJigsaws.Remove(jigsawUI);
-                }
+            }
+            UpdateJigsawUIState(jigsawUI);
+            foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
+            {
+                if (!collectedJigsawUI.gameObject.activeSelf) continue;
+                if (jigsawUI == collectedJigsawUI) continue;
                 
                 var collectedJigsawRect = Utility.GetUIRectScreenRect(collectedJigsawUI.RectTransform, _mainCamera);
                 var draggingJigsawRect = Utility.GetUIRectScreenRect(jigsawUI.RectTransform, _mainCamera);
-                if (!collectedJigsawRect.Overlaps(draggingJigsawRect))
-                {
-                    continue;
-                }
-                
-                if (Utility.IsSameColor(jigsawUI.Color, collectedJigsawUI.Color))
-                {
-                    var iou = Utility.IoU(collectedJigsawRect, draggingJigsawRect);
-                    if (iou > 0f)
-                    {
-                        jigsawUI.MarkBlocked(false);
-                        collectedJigsawUI.MarkBlocked(false);
-
-                        jigsawUI.ConnectedJigsaws.Add(collectedJigsawUI);
-                        collectedJigsawUI.ConnectedJigsaws.Add(jigsawUI);
-                    }
-                }
-                else
-                {
-                    if (jigsawUI.transform.GetSiblingIndex() < collectedJigsawUI.transform.GetSiblingIndex())
-                    {
-                        // dragging jigsaw is underneath
-                        jigsawUI.MarkBlocked(true);
-                    }
-                    else
-                    {
-                        // dragging jigsaw is above
-                        collectedJigsawUI.MarkBlocked(true);
-                    }
-                }
+                if (!collectedJigsawRect.Overlaps(draggingJigsawRect)) continue;
+                UpdateJigsawUIState(collectedJigsawUI);
             }
         }
 
@@ -387,6 +358,43 @@ namespace DefaultNamespace
                 if (!collectedJigsawUI.gameObject.activeSelf) continue;
                 collectedJigsawUI.UpdateUIVisibleArea();
             }
+        }
+
+        private void UpdateJigsawUIState(JigsawUI jigsawUI)
+        {
+            UpdateConnectedUIJigsaws(jigsawUI);
+            jigsawUI.MarkBlocked(IsBlockedByOtherUIJigsaw(jigsawUI));
+        }
+
+        private void UpdateConnectedUIJigsaws(JigsawUI jigsawUI)
+        {
+            jigsawUI.ConnectedJigsaws.Clear();
+            foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
+            {
+                if (!collectedJigsawUI.gameObject.activeSelf) continue;
+                if (collectedJigsawUI == jigsawUI) continue;
+                if (Utility.IsSameColor(collectedJigsawUI.Color, jigsawUI.Color) &&
+                    Utility.IoU(collectedJigsawUI.VisibleRect, jigsawUI.VisibleRect) > 0.9f)
+                {
+                    jigsawUI.ConnectedJigsaws.Add(collectedJigsawUI);
+                }
+            }
+        }
+
+        private bool IsBlockedByOtherUIJigsaw(JigsawUI jigsawUI)
+        {
+            foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
+            {
+                if (!collectedJigsawUI.gameObject.activeSelf) continue;
+                if (collectedJigsawUI == jigsawUI) continue;
+
+                if (collectedJigsawUI.transform.GetSiblingIndex() > jigsawUI.transform.GetSiblingIndex() && 
+                    !Utility.IsSameColor(collectedJigsawUI.Color, jigsawUI.Color))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

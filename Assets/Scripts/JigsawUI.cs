@@ -197,7 +197,6 @@ public class JigsawUI : MonoBehaviour
         if (Utility.IsNotFullyInsideScreen(jigsawRect))
         {
             MarkBlocked(true);
-            UpdateUIVisibleArea();
         }
         if (!_isBlocked && ConnectedJigsaws.Count == 0)
         {
