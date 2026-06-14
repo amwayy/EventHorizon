@@ -385,6 +385,8 @@ MonoBehaviour:
   jigsawBoards: []
   jigsawContainer: {fileID: 578979907242095333}
   entryPoint: {fileID: 6198855088499527364}
+  entranceBarrier: {fileID: 0}
+  titleText: {fileID: 0}
 --- !u!1 &4541459900607765609
 GameObject:
   m_ObjectHideFlags: 0
@@ -578,7 +580,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
       propertyPath: m_LocalScale.x
-      value: 24.441357
+      value: 23.71358
       objectReference: {fileID: 0}
     - target: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
       propertyPath: m_LocalScale.y
@@ -590,11 +592,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.0181
+      value: 0.0505
       objectReference: {fileID: 0}
     - target: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 20.08
+      value: 19.97
       objectReference: {fileID: 0}
     - target: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
       propertyPath: m_LocalPosition.z
@@ -722,7 +724,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
       propertyPath: m_LocalScale.x
-      value: 26.672983
+      value: 23.872305
       objectReference: {fileID: 0}
     - target: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
       propertyPath: m_LocalScale.z
@@ -730,7 +732,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.053
+      value: 0.0534
       objectReference: {fileID: 0}
     - target: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
       propertyPath: m_LocalPosition.y

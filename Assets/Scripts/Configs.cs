@@ -9,7 +9,7 @@ public static class Configs
     
     public const int CanBackToHubLevelIdMin = 200;
 
-    public const int InitialLevelId = 100;
+    public const int InitialLevelId = 101;
     
     public const int ViewportWidth = 480;
     
@@ -19,16 +19,16 @@ public static class Configs
 
     public static readonly Dictionary<(int, int), SlotJigsawData> InitialPutJigsaws = new()
     {
-        {(100, 1), new SlotJigsawData
+        {(101, 1), new SlotJigsawData
         {
-            CollectiveIndexes = new []{ (100, 1) },
+            CollectiveIndexes = new []{ (101, 1) },
             RotationAngle = 180,
             JigsawName = "1O",
             JigsawColor = Colors.GetJigsawColor(ColorType.Green),
         }},
-        {(101, 0), new SlotJigsawData
+        {(102, 0), new SlotJigsawData
         {
-            CollectiveIndexes = new []{ (101, 1) },
+            CollectiveIndexes = new []{ (102, 1) },
             RotationAngle = 0,
             JigsawName = "1I",
             JigsawColor = Colors.GetJigsawColor(ColorType.Green),

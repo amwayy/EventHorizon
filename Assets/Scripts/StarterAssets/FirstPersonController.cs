@@ -69,7 +69,7 @@ namespace StarterAssets
 		protected StarterAssetsInputs _input;
 		private GameObject _mainCamera;
 
-		private const float _threshold = 0.0001f;
+		private const float _threshold = 0.001f;
 
 		private bool IsCurrentDeviceMouse
 		{
@@ -90,8 +90,6 @@ namespace StarterAssets
 			{
 				_mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 			}
-			
-			RotationSpeed = Mathf.Max(10f, RotationSpeed);
 		}
 
 		private void Start()
