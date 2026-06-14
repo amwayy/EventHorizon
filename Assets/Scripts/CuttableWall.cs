@@ -135,8 +135,7 @@ namespace DefaultNamespace
 
             jigsawCollective.transform.position = hit.point;
             var isInFront = Vector3.Dot(hit.collider.transform.forward, ray.direction) < 0;
-            jigsawCollective.transform.localRotation = Quaternion.Euler(
-                jigsawCollective.transform.eulerAngles.x, isInFront ? 180f : 0f, args.Angle);
+            jigsawCollective.transform.localRotation = Quaternion.Euler(0, isInFront ? 0f : 180f, args.Angle);
             jigsawCollective.transform.localScale = Vector3.one;
             var jigsawScreenRect = Utility.GetScreenRect(jigsawCollectiveData.meshFilter.GetComponent<Renderer>(), _mainCamera);
             var scaleFactor = (args.CapturedJigsawRT.width / jigsawScreenRect.width + args.CapturedJigsawRT.height /  jigsawScreenRect.height) * 0.5f;
