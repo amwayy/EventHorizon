@@ -31,7 +31,7 @@ public class GameManager: MonoBehaviour
 
     private void Start()
     {
-        QualitySettings.vSyncCount = 0;
+        QualitySettings.vSyncCount = 1;
         Application.targetFrameRate = 60;
     }
 
