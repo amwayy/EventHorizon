@@ -115,16 +115,6 @@ public class Level: MonoBehaviour
             jigsawSlot.ResetState(sendNotification);
         }
     }
-    
-    public void InitAdjacentLevelIds()
-    {
-        if (_isAdjacentLevelsInitialized) return;
-        
-        adjacentLevelIds.Add(levelIndex - 1);
-        adjacentLevelIds.Add(levelIndex + 1);
-        
-        _isAdjacentLevelsInitialized = true;
-    }
 
     private void InitTitle()
     {

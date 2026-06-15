@@ -8,6 +8,7 @@ public class LevelManager : MonoBehaviour
 {
     [SerializeField] private CharacterController playerController;
     [SerializeField] private Transform[] regions;
+    [SerializeField] private Level startLevel;
     
     public static LevelManager Instance;
 
@@ -44,7 +45,7 @@ public class LevelManager : MonoBehaviour
 
     private void InitPlayerPosition()
     {
-        CurrentLevelIndex = DataManager.Instance.Load(DataKey.CurrentLevelId, Configs.InitialLevelId);
+        CurrentLevelIndex = DataManager.Instance.Load(DataKey.CurrentLevelId, startLevel.LevelId);
         TeleportPlayerToLevel(CurrentLevelIndex);
     }
 
@@ -78,7 +79,6 @@ public class LevelManager : MonoBehaviour
         CurrentLevelIndex = levelId;
 
         var enteredLevel = GetLevel(levelId);
-        enteredLevel.InitAdjacentLevelIds();
         var adjacentLevelIds = enteredLevel.AdjacentLevelIds;
         foreach (var level in levels)
         {
@@ -92,7 +92,6 @@ public class LevelManager : MonoBehaviour
             {
                 var neighborLevel = GetLevel(neighborLevelId);
                 if (!neighborLevel) continue;
-                neighborLevel.InitAdjacentLevelIds();
                 if ((neighborLevel.AdjacentLevelIds != null && neighborLevel.AdjacentLevelIds.Contains(level.LevelId)) || 
                     Mathf.Abs(neighborLevel.LevelId - level.LevelId) <= 1)
                 {
