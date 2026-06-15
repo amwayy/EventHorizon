@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2925993823497387379}
   - component: {fileID: 893386787515067472}
   - component: {fileID: 2964293862657647646}
-  m_Layer: 5
+  m_Layer: 10
   m_Name: JigsawUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}

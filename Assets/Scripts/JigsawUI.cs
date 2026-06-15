@@ -220,7 +220,7 @@ public class JigsawUI : MonoBehaviour
     public void UpdateUIVisibleArea()
     {
         if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return;
-        var layerMask = LayerMask.GetMask("UI");
+        var layerMask = LayerMask.GetMask("JigsawUI");
         _visibleAreaJigsawData = ScreenshotController.Instance.GetSameColorRegionShape(
             visiblePosition, out var rect, out var rt, out var angle, clearOutline: true, layerMask);
         VisibleRect = rect;
@@ -322,7 +322,7 @@ public class JigsawUI : MonoBehaviour
     {
         if (!TryGetAnyVisibleScreenPosition(out var visiblePosition)) return false;
         ScreenshotController.Instance.GetSameColorRegionShape(
-            visiblePosition, out _, out var uiRt, out _, clearOutline: true, layer: LayerMask.GetMask("UI"));
+            visiblePosition, out _, out var uiRt, out _, clearOutline: true, layer: LayerMask.GetMask("JigsawUI"));
         ScreenshotController.Instance.GetSameColorRegionShape(
             visiblePosition, out _, out var worldRt, out _, clearOutline: clearOutline);
         var uiRtPixelCount = GPUComputeHelper.Instance.GetPixelCount(uiRt);

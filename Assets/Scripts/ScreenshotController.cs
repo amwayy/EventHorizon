@@ -130,6 +130,7 @@ public class ScreenshotController : MonoBehaviour
     public JigsawRuntimeData GetSameColorRegionShape(Vector2 position, out Rect rect, out RenderTexture rt,
         out int targetAngle, bool clearOutline, LayerMask layer = default)
     {
+        ClearPreviousOutline();
         var originalCullingMask = _cam.cullingMask;
         if (layer != 0)
         {
