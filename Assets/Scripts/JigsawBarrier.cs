@@ -13,7 +13,7 @@ namespace DefaultNamespace
         
         private static readonly int Alpha = Shader.PropertyToID("_Alpha");
         
-        private int _levelId;
+        private int _levelId = -1;
 
         private void Start()
         {
