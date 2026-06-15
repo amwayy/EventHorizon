@@ -367,4 +367,24 @@ public static class Utility
         var screen = new Rect(0, 0, Configs.ViewportWidth, Configs.ViewportHeight);
         return !screen.Contains(rect.min) || !screen.Contains(rect.max);
     }
+
+    public static bool IsUIOnTop(Vector2 screenPoint, GameObject uiGameObject)
+    {
+        var eventData = new PointerEventData(EventSystem.current);
+        eventData.position = screenPoint;
+
+        var results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventData, results);
+
+        if (results.Count > 0)
+        {
+            var top = results[0].gameObject;
+
+            if (top != uiGameObject)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 }

@@ -80,7 +80,8 @@ public class JigsawUI : MonoBehaviour
     private void HandleHover()
     {
         Vector2 mousePos = GameManager.Instance.GetViewportMousePosition();
-        var isInside = _rawImageHandler.IsRaycastLocationValid(mousePos, _canvas.worldCamera);
+        var isInside = Utility.IsUIOnTop(mousePos, gameObject) &&
+                       _rawImageHandler.IsRaycastLocationValid(mousePos, _canvas.worldCamera);
 
         if (isInside && !_isHovering)
         {
