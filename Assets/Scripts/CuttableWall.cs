@@ -135,7 +135,9 @@ namespace DefaultNamespace
 
             jigsawCollective.transform.position = hit.point;
             var isInFront = Vector3.Dot(hit.collider.transform.forward, ray.direction) < 0;
-            jigsawCollective.transform.localRotation = Quaternion.Euler(0, isInFront ? 0f : 180f, args.Angle);
+            // Use rotation around Z-axis instead of Y to avoid X-axis flip from gimbal lock
+            var baseRotation = isInFront ? Quaternion.identity : Quaternion.Euler(0, 0, 180);
+            jigsawCollective.transform.localRotation = baseRotation * Quaternion.Euler(0, 0, args.Angle);
             jigsawCollective.transform.localScale = Vector3.one;
             var jigsawScreenRect = Utility.GetScreenRect(jigsawCollectiveData.meshFilter.GetComponent<Renderer>(), _mainCamera);
             var scaleFactor = (args.CapturedJigsawRT.width / jigsawScreenRect.width + args.CapturedJigsawRT.height /  jigsawScreenRect.height) * 0.5f;
