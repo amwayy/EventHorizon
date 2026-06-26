@@ -40,12 +40,14 @@ namespace DefaultNamespace
             
             EventComponent.Instance.Subscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
             EventComponent.Instance.Subscribe(ScreenshotModeToggleEventArgs.EventId, OnToggleScreenshotMode);
+            EventComponent.Instance.Subscribe(BoardStateChangedEventArgs.EventId, OnBoardStateChanged);
         }
 
         private void OnDestroy()
         {
             EventComponent.Instance.Unsubscribe(CapturedJigsawEventArgs.EventId, OnCapturedJigsaw);
             EventComponent.Instance.Unsubscribe(ScreenshotModeToggleEventArgs.EventId, OnToggleScreenshotMode);
+            EventComponent.Instance.Unsubscribe(BoardStateChangedEventArgs.EventId, OnBoardStateChanged);
             _resultsBuffer?.Release();
         }
 
@@ -319,11 +321,7 @@ namespace DefaultNamespace
 
         public void OnEndDragJigsawUI(JigsawUI jigsawUI)
         {
-            foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
-            {
-                if (!collectedJigsawUI.gameObject.activeSelf) continue;
-                collectedJigsawUI.UpdateUIVisibleArea();
-            }
+            UpdateJigsawVisibleAreas();
             UpdateJigsawUIState(jigsawUI);
             foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
             {
@@ -334,6 +332,15 @@ namespace DefaultNamespace
                 var draggingJigsawRect = Utility.GetUIRectScreenRect(jigsawUI.RectTransform, _mainCamera);
                 if (!collectedJigsawRect.Overlaps(draggingJigsawRect)) continue;
                 UpdateJigsawUIState(collectedJigsawUI);
+            }
+        }
+
+        private void UpdateJigsawVisibleAreas()
+        {
+            foreach (var collectedJigsawUI in _collectedJigsaws.Keys)
+            {
+                if (!collectedJigsawUI.gameObject.activeSelf) continue;
+                collectedJigsawUI.UpdateUIVisibleArea();
             }
         }
 
@@ -395,6 +402,15 @@ namespace DefaultNamespace
                 }
             }
             return false;
+        }
+
+        private void OnBoardStateChanged(object sender, GameEventArgs e)
+        {
+            if (e is not BoardStateChangedEventArgs args) return;
+            
+            if (args.IsEmpty) return;
+            
+            UpdateJigsawVisibleAreas();
         }
     }
 }

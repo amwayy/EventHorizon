@@ -198,15 +198,16 @@ public class JigsawBoard : MonoBehaviour
 
     public void OnPutOnSlot()
     {
-        if (IsFilled())
+        var isFilled = IsFilled();
+        if (isFilled)
         {
             foreach (var slot in slots)
             {
                 slot.Unlock();
             }
             _isShowingSlots = false;
-            EventComponent.Instance.Fire(this, BoardStateChangedEventArgs.Create(true));
         }
+        EventComponent.Instance.Fire(this, BoardStateChangedEventArgs.Create(isFilled, false));
     }
 
     public void ClearJigsaws()
@@ -216,7 +217,7 @@ public class JigsawBoard : MonoBehaviour
             slot.gameObject.SetActive(true);
             slot.ResetState();
         }
-        EventComponent.Instance.Fire(this, BoardStateChangedEventArgs.Create(false));
+        EventComponent.Instance.Fire(this, BoardStateChangedEventArgs.Create(false, true));
     }
     
     public void ClearSlot(JigsawSlot sender)

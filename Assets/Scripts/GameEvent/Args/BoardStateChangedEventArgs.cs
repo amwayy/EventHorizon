@@ -7,11 +7,13 @@ namespace GameEvent.Args
         public override int Id => EventId;
         
         public bool IsFilled { get; private set; }
+        public bool IsEmpty { get; private set; }
     
-        public static BoardStateChangedEventArgs Create(bool isFilled)
+        public static BoardStateChangedEventArgs Create(bool isFilled, bool isEmpty)
         {
             var e = ReferencePool.Acquire<BoardStateChangedEventArgs>();
             e.IsFilled = isFilled;
+            e.IsEmpty = isEmpty;
             
             return e;
         }
