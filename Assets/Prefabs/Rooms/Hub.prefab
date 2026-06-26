@@ -189,6 +189,8 @@ MonoBehaviour:
   - {fileID: 8276210024380407090}
   jigsawContainer: {fileID: 8741440090650504388}
   entryPoint: {fileID: 3076068238038223005}
+  entranceBarrier: {fileID: 0}
+  titleText: {fileID: 0}
 --- !u!65 &5978755932814826305
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -926,7 +928,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 180
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 3406811050370930429, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -1121,11 +1124,34 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 3406811050370930429, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2774619714912145310, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8777780498597029315}
   m_SourcePrefab: {fileID: 100100000, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
+--- !u!1 &1962212432151762545 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2774619714912145310, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}
+  m_PrefabInstance: {fileID: 4447938094848580079}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8777780498597029315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1962212432151762545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45d8df841e1344c39e3a648e252dedf5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DefaultNamespace.Ground
+  minStripeDensity: 1
+  maxStripeDensity: 10
 --- !u!4 &5538620165908404348 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8171607335570604435, guid: 3c7240c25a1bfbf4992dcba28a158ac6, type: 3}

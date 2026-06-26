@@ -12,6 +12,8 @@ Shader "Custom/UnlitStripeWorld"
         _AxisMode ("Axis Mode", Float) = 3
 
         _CustomDir ("Custom Direction", Vector) = (1,0,0,0)
+        
+        _AnchorWorldPos ("AnchorWorldPos", Vector) = (0, 0, 0, 0)
     }
 
     SubShader
@@ -58,6 +60,7 @@ Shader "Custom/UnlitStripeWorld"
             float _Width;
             float _AxisMode;
             float4 _CustomDir;
+            float3 _AnchorWorldPos;
 
             Varyings vert (Attributes v)
             {
@@ -69,13 +72,16 @@ Shader "Custom/UnlitStripeWorld"
 
             float GetCoord(float3 posWS)
             {
-                if (_AxisMode == 0) return posWS.x;
-                if (_AxisMode == 1) return posWS.y;
-                if (_AxisMode == 2) return posWS.z;
-                if (_AxisMode == 3) return dot(posWS.xz, float2(0.7071, 0.7071));
+                // Calculate position relative to anchor
+                float3 relativePos = posWS - _AnchorWorldPos;
+
+                if (_AxisMode == 0) return relativePos.x;
+                if (_AxisMode == 1) return relativePos.y;
+                if (_AxisMode == 2) return relativePos.z;
+                if (_AxisMode == 3) return dot(relativePos.xz, float2(0.7071, 0.7071));
 
                 float3 dir = normalize(_CustomDir.xyz);
-                return dot(posWS, dir);
+                return dot(relativePos, dir);
             }
 
             half4 frag (Varyings i) : SV_Target
@@ -84,8 +90,8 @@ Shader "Custom/UnlitStripeWorld"
 
                 float stripe = frac(coord);
 
-                // ✅ 抗锯齿
-                float w = max(fwidth(coord), 0.001);
+                // 抗锯齿（0.3是表示程度的系数）
+                float w = max(fwidth(coord) * 0.3, 0.001);
                 float mask = smoothstep(_Width - w, _Width + w, stripe);
 
                 float3 col = lerp(_ColorA.rgb, _ColorB.rgb, mask);

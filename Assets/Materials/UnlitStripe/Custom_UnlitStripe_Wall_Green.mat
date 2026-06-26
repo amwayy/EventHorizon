@@ -28,10 +28,11 @@ Material:
     m_Floats:
     - _Angle: 24.5
     - _AxisMode: 3
-    - _Density: 0.9
+    - _Density: 1
     - _Size: 0.081
-    - _Width: 0.1
+    - _Width: 0.15
     m_Colors:
+    - _AnchorWorldPos: {r: 0, g: 0, b: 0, a: 0}
     - _ColorA: {r: 0.44333336, g: 0.95, b: 0.49549025, a: 1}
     - _ColorB: {r: 0.468, g: 1, b: 0.52119994, a: 1}
     - _CustomDir: {r: 1, g: 0, b: 0, a: 0}
