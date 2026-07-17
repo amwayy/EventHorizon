@@ -213,5 +213,15 @@ namespace DefaultNamespace
                 _bufferParity = 0;
             }
         }
+        
+        [ContextMenu("Test Cut")]
+        public void CutHole()
+        {
+            foreach (var jigsawBrush in _jigsawBrushes.Values)
+            {
+                CutJigsawHole(jigsawBrush);
+                break;
+            }
+        }
     }
 }

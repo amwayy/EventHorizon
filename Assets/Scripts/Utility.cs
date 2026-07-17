@@ -152,11 +152,11 @@ public static class Utility
         JigsawEdgeType up = jigsawData.upEdgeType;
         JigsawEdgeType down = jigsawData.downEdgeType;
 
-        // 根据旋转重新映射边
+        // counter-clockwise
         switch (rotation)
         {
             case 90:
-                (left, up, right, down) = (up, left, down, right);
+                (left, up, right, down) = (up, right, down, left);
                 break;
 
             case 180:
@@ -165,7 +165,7 @@ public static class Utility
                 break;
 
             case 270:
-                (left, up, right, down) = (down, right, up, left);
+                (left, up, right, down) = (down, left, up, right);
                 break;
         }
 

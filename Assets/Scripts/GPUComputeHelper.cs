@@ -37,7 +37,10 @@ namespace DefaultNamespace
 
             pixelCountShader.SetBuffer(kernel, "Result", _pixelCountResultBuffer);
 
-            pixelCountShader.Dispatch(kernel, rt.width / 8, rt.height / 8, 1);
+            int threadGroupX = Mathf.CeilToInt(rt.width / 8.0f);
+            int threadGroupY = Mathf.CeilToInt(rt.height / 8.0f);
+
+            pixelCountShader.Dispatch(kernel, threadGroupX, threadGroupY, 1);
 
             uint[] result = new uint[1];
             _pixelCountResultBuffer.GetData(result);
